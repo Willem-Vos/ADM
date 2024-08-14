@@ -1,0 +1,365 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="6291196f-5dc1-4c5c-b2f5-59a3beac3516" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/ADM.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/other.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_6088570/aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_6088570/airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_6088570/alt_aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_6088570/alt_airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_6088570/alt_flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_6088570/config.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_6088570/dist.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_6088570/flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_6088570/itineraries.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_6088570/position.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_6088570/rotations.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_example/aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_example/airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_example/alt_aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_example/alt_airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_example/alt_flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_example/config.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_example/dist.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_example/flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_example/itineraries.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_example/position.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_example/rotations.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_small/aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_small/airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_small/alt_aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_small/alt_airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_small/alt_flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_small/config.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_small/dist.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_small/flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_small/itineraries.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_small/position.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_small/rotations.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A02_6088570/aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A02_6088570/airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A02_6088570/alt_aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A02_6088570/alt_airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A02_6088570/alt_flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A02_6088570/config.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A02_6088570/dist.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A02_6088570/flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A02_6088570/itineraries.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A02_6088570/position.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A02_6088570/rotations.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A03_6088570/aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A03_6088570/airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A03_6088570/alt_aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A03_6088570/alt_airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A03_6088570/alt_flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A03_6088570/config.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A03_6088570/dist.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A03_6088570/flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A03_6088570/itineraries.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A03_6088570/position.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A03_6088570/rotations.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A04_6088570/aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A04_6088570/airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A04_6088570/alt_aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A04_6088570/alt_airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A04_6088570/alt_flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A04_6088570/config.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A04_6088570/dist.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A04_6088570/flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A04_6088570/itineraries.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A04_6088570/position.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A04_6088570/rotations.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A05_6088570/aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A05_6088570/airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A05_6088570/alt_aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A05_6088570/alt_airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A05_6088570/alt_flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A05_6088570/config.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A05_6088570/dist.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A05_6088570/flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A05_6088570/itineraries.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A05_6088570/position.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A05_6088570/rotations.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_01/aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_01/airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_01/alt_aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_01/alt_airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_01/alt_flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_01/config.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_01/dist.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_01/flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_01/itineraries.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_01/position.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_01/rotations.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_02/aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_02/airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_02/alt_aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_02/alt_airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_02/alt_flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_02/config.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_02/dist.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_02/flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_02/itineraries.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_02/position.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_02/rotations.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_03/aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_03/airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_03/alt_aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_03/alt_airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_03/alt_flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_03/config.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_03/dist.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_03/flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_03/itineraries.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_03/position.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_03/rotations.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_04/aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_04/airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_04/alt_aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_04/alt_airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_04/alt_flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_04/config.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_04/dist.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_04/flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_04/itineraries.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_04/position.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_04/rotations.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_05/aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_05/airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_05/alt_aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_05/alt_airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_05/alt_flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_05/config.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_05/dist.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_05/flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_05/itineraries.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_05/position.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB1/B_05/rotations.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_06/aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_06/airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_06/alt_aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_06/alt_airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_06/alt_flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_06/config.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_06/dist.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_06/flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_06/itineraries.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_06/position.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_06/rotations.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_07/aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_07/airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_07/alt_aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_07/alt_airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_07/alt_flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_07/config.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_07/dist.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_07/flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_07/itineraries.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_07/position.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_07/rotations.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_08/aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_08/airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_08/alt_aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_08/alt_airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_08/alt_flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_08/config.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_08/dist.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_08/flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_08/itineraries.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_08/position.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_08/rotations.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_09/aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_09/airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_09/alt_aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_09/alt_airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_09/alt_flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_09/config.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_09/dist.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_09/flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_09/itineraries.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_09/position.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_09/rotations.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_10/aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_10/airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_10/alt_aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_10/alt_airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_10/alt_flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_10/config.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_10/dist.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_10/flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_10/itineraries.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_10/position.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/SetB2/B_10/rotations.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/environment.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/preprocessing.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/scratch.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/environment.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/preprocessing.py" root0="SKIP_INSPECTION" />
+  </component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="QODANA_PROBLEMS_VIEW_TAB" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 8
+}</component>
+  <component name="ProjectId" id="2kMut0B3cMyyDwxyJ9mwdObonqF" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Python.Environment.executor": "Run",
+    "Python.environment.executor": "Run",
+    "Python.preprocessing.executor": "Run",
+    "Python.scratch.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "git-widget-placeholder": "main",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "preferences.lookFeel",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="RunManager" selected="Python.environment">
+    <configuration name="environment" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="ADM" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/environment.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="preprocessing" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="ADM" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/preprocessing.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="scratch" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="ADM" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/scratch.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.environment" />
+        <item itemvalue="Python.preprocessing" />
+        <item itemvalue="Python.scratch" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-1d06a55b98c1-0b3e54e931b4-JavaScript-PY-241.18968.29" />
+        <option value="bundled-python-sdk-f5635417b835-2767605e8bc2-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-241.18968.29" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="6291196f-5dc1-4c5c-b2f5-59a3beac3516" name="Changes" comment="" />
+      <created>1723105977878</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1723105977878</updated>
+      <workItem from="1723122959068" duration="74526000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="UnknownFeatures">
+    <option featureType="com.intellij.fileTypeFactory" implementationName="*.csv" />
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/ADM$preprocessing.coverage" NAME="preprocessing Coverage Results" MODIFIED="1723542967865" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ADM$environment.coverage" NAME="environment Coverage Results" MODIFIED="1723560061227" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ADM$Environment.coverage" NAME="Environment Coverage Results" MODIFIED="1723123241323" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ADM$scratch.coverage" NAME="scratch Coverage Results" MODIFIED="1723476283615" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+  </component>
+</project>
