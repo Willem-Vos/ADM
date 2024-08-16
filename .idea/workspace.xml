@@ -6,10 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="6291196f-5dc1-4c5c-b2f5-59a3beac3516" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Data/A01_small/alt_aircraft.csv" beforeDir="false" afterPath="$PROJECT_DIR$/Data/A01_small/alt_aircraft.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Data/A01_small/alt_flights.csv" beforeDir="false" afterPath="$PROJECT_DIR$/Data/A01_small/alt_flights.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Data/A01_small/flights.csv" beforeDir="false" afterPath="$PROJECT_DIR$/Data/A01_small/flights.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/environment.py" beforeDir="false" afterPath="$PROJECT_DIR$/environment.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -154,7 +150,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1723105977878</updated>
-      <workItem from="1723122959068" duration="89521000" />
+      <workItem from="1723122959068" duration="91745000" />
     </task>
     <servers />
   </component>
@@ -163,6 +159,17 @@
   </component>
   <component name="UnknownFeatures">
     <option featureType="com.intellij.fileTypeFactory" implementationName="*.csv" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/ADM$preprocessing.coverage" NAME="preprocessing Coverage Results" MODIFIED="1723542967865" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
