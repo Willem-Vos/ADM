@@ -31,7 +31,9 @@ class AircraftRecovery(gym.Env):
         # Calculate the total action space size
         self.swap_action_space_size = len(flight_data) * len(aircraft_data)
         self.delay_action_space_size = len(flight_data) * len(self.delay_options)
-        self.action_space_size = self.swap_action_space_size + self.delay_action_space_size + 1  # +1 for no action
+        # +1 for do nothing:
+        # self.action_space_size = self.swap_action_space_size + self.delay_action_space_size # SWAPS + DELAYS
+        self.action_space_size = self.swap_action_space_size + 1  # ONLY SWAPS
         self.action_space = spaces.Discrete(self.action_space_size)
         # Observation space: has_ac_assigned, can_depart, ADT, AAT for each flight
         self.observation_space = spaces.Dict({
@@ -146,9 +148,9 @@ class AircraftRecovery(gym.Env):
             delay_action = action - self.swap_action_space_size
             flight_idx = delay_action // len(self.delay_options)
             delay_idx = delay_action % len(self.delay_options)
-            flight_nr = self.flight_data[flight_idx]
+            flight_nr = self.flight_data[flight_idx]["Flightnr"]
             delay_minutes = self.delay_options[delay_idx]
-            return 'delay', flight_idx, delay_idx
+            return 'delay', flight_nr, delay_minutes
         else:
             return 'none', None, None
 
@@ -283,6 +285,7 @@ class AircraftRecovery(gym.Env):
         return valid_actions
 
 
+
 if __name__ == '__main__':
     folder = 'A01_small'
 
@@ -301,7 +304,7 @@ if __name__ == '__main__':
     env.render()
     iteration = 0
     plot_schedule(aircraft_data, flight_data, disruptions, iteration)
-    while not done:
+    while not done and iteration < 25:
         iteration += 1
         print(f'\n\n\nITERATION: {iteration}')
         print(env.aircraft_data)
