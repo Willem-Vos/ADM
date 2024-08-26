@@ -5,40 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="6291196f-5dc1-4c5c-b2f5-59a3beac3516" name="Changes" comment="small changes">
-      <change afterPath="$PROJECT_DIR$/DP_table.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/DP_table_nostep.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_mini/aircraft.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_mini/airports.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_mini/alt_aircraft.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_mini/alt_airports.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_mini/alt_flights.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_mini/config.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_mini/dist.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_mini/flights.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_mini/itineraries.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_mini/position.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_mini/rotations.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_small2/aircraft.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_small2/airports.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_small2/alt_aircraft.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_small2/alt_airports.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_small2/alt_flights.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_small2/config.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_small2/dist.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_small2/flights.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_small2/itineraries.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_small2/position.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_small2/rotations.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/alt_states.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/centralized_dynamic_program.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dynamic_program.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/DP_costs.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Data/A01_small/alt_aircraft.csv" beforeDir="false" afterPath="$PROJECT_DIR$/Data/A01_small/alt_aircraft.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Data/A01_small/config.csv" beforeDir="false" afterPath="$PROJECT_DIR$/Data/A01_small/config.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Data/A01_small/flights.csv" beforeDir="false" afterPath="$PROJECT_DIR$/Data/A01_small/flights.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/environment.py" beforeDir="false" afterPath="$PROJECT_DIR$/environment.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/preprocessing.py" beforeDir="false" afterPath="$PROJECT_DIR$/preprocessing.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scratch.py" beforeDir="false" afterPath="$PROJECT_DIR$/scratch.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/DP.py" beforeDir="false" afterPath="$PROJECT_DIR$/DP.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Data/A01_small2/flights.csv" beforeDir="false" afterPath="$PROJECT_DIR$/Data/A01_small2/flights.csv" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -73,10 +43,8 @@
   }
 }</component>
   <component name="HighlightingSettingsPerFile">
-    <setting file="file://$PROJECT_DIR$/DP_table.py" root0="SKIP_INSPECTION" />
-    <setting file="file://$PROJECT_DIR$/DP_table_nostep.py" root0="SKIP_INSPECTION" />
-    <setting file="file://$PROJECT_DIR$/alt_states.py" root0="SKIP_INSPECTION" />
-    <setting file="file://$PROJECT_DIR$/centralized_dynamic_program.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/DP.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/DP_costs.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/dynamic_program.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/environment.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/preprocessing.py" root0="SKIP_INSPECTION" />
@@ -96,6 +64,7 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "Python.DP_costs.executor": "Run",
     "Python.DP_table.executor": "Run",
     "Python.DP_table_nostep.executor": "Run",
     "Python.Environment.executor": "Run",
@@ -128,6 +97,52 @@
     </key>
   </component>
   <component name="RunManager" selected="Python.DP_table_nostep">
+    <configuration name="DP" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="ADM" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/DP.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="DP_costs" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="ADM" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/DP_costs.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="DP_table" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="ADM" />
       <option name="ENV_FILES" value="" />
@@ -143,29 +158,6 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/DP_table.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
-    <configuration name="DP_table_nostep" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="ADM" />
-      <option name="ENV_FILES" value="" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/DP_table_nostep.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -220,36 +212,13 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="environment" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="ADM" />
-      <option name="ENV_FILES" value="" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/environment.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
     <recent_temporary>
       <list>
         <item itemvalue="Python.DP_table_nostep" />
+        <item itemvalue="Python.DP_costs" />
         <item itemvalue="Python.DP_table" />
         <item itemvalue="Python.alt_states" />
         <item itemvalue="Python.centralized_dynamic_program" />
-        <item itemvalue="Python.environment" />
       </list>
     </recent_temporary>
   </component>
@@ -270,7 +239,7 @@
       <option name="presentableId" value="Default" />
       <updated>1723105977878</updated>
       <workItem from="1723122959068" duration="96687000" />
-      <workItem from="1724067759070" duration="168750000" />
+      <workItem from="1724067759070" duration="173485000" />
     </task>
     <task id="LOCAL-00001" summary="small changes">
       <option name="closed" value="true" />
@@ -280,7 +249,15 @@
       <option name="project" value="LOCAL" />
       <updated>1723815094695</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="small changes">
+      <option name="closed" value="true" />
+      <created>1724682857270</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1724682857270</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -306,13 +283,6 @@
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/centralized_dynamic_program.py</url>
-          <line>607</line>
-          <option name="timeStamp" value="27" />
-        </line-breakpoint>
-      </breakpoints>
       <default-breakpoints>
         <breakpoint type="python-exception">
           <properties notifyOnTerminate="true" exception="BaseException">
@@ -331,11 +301,12 @@
     <SUITE FILE_PATH="coverage/ADM$DP_table.coverage" NAME="DP_table Coverage Results" MODIFIED="1724675156058" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$all_flights.coverage" NAME="alt_states Coverage Results" MODIFIED="1724660928410" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$preprocessing.coverage" NAME="preprocessing Coverage Results" MODIFIED="1723542967865" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ADM$DP_costs.coverage" NAME="DP_costs Coverage Results" MODIFIED="1724684664576" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$environment2.coverage" NAME="dynamic_program Coverage Results" MODIFIED="1724436811477" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$environment.coverage" NAME="environment Coverage Results" MODIFIED="1724438584915" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$centralized_dynamic_program.coverage" NAME="centralized_dynamic_program Coverage Results" MODIFIED="1724660855652" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$Environment.coverage" NAME="Environment Coverage Results" MODIFIED="1723123241323" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$scratch.coverage" NAME="scratch Coverage Results" MODIFIED="1724342245985" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/ADM$DP_table_nostep.coverage" NAME="DP_table_nostep Coverage Results" MODIFIED="1724681282989" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ADM$DP_table_nostep.coverage" NAME="DP Coverage Results" MODIFIED="1724686032407" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>

@@ -263,46 +263,46 @@ class DisruptionRealization:
 
         return state_dict
 
-    def compute_total_reward(self, current_state, action_set):
-        total_reward = 0
+    def compute_total_contribution(self, current_state, action_set):
+        total_contribution = 0
         for aircraft_id, action in zip(current_state, action_set):
             aircraft_state = current_state[aircraft_id]
-            individual_reward = self.compute_individual_reward(aircraft_state, action)
-            total_reward += individual_reward
-        return total_reward
+            individual_contribution = self.compute_individual_contribution(aircraft_state, action)
+            total_contribution += individual_contribution
+        return total_contribution
 
-    def compute_individual_reward(self, aircraft_state, action):
-        reward = 0
+    def compute_individual_contribution(self, aircraft_state, action):
+        contribution = 0
 
         aircraft_id, conflict_next, flights = aircraft_state.values()
         action_type, flight_nr, new_aircraft_id = action
 
         if action_type == 'swap':
-            reward += -10               # cost of swapping
+            contribution += -10               # contribution of swapping
             if conflict_next == 1:
-                reward += 0             # conflict averted
+                contribution += 0             # conflict averted
 
             elif conflict_next == 0:
-                reward += 0             # Avoid unnecessary swaps
+                contribution += 0             # Avoid unnecessary swaps
 
         elif action_type == 'none':
             if conflict_next == 1:      # No action is taken when in conflict at next step
-                reward -= 1000
+                contribution -= 1000
 
             elif conflict_next == 0:    #
-                reward += 0
+                contribution += 0
 
         # if aircraft_state['id'] == 'B777#1' and action == ('swap', '4', 'B767#1') and conflict_next == 1:
-        #     print('REWARD', reward)
+        #     print('REWARD', contribution)
 
-        return reward
+        return contribution
 
 ############## SOLVE
     def solve_dp(self):
 
         print(f'\n\n\n')
-        # Initialize the value function for the last step (base case)
-        self.value_function = {}
+        # Initialize the cost function for the last step (base case)
+        self.cost_function = {}
         self.policy = {}
 
         # Track the most up-to-date state after each step is processed
@@ -314,12 +314,12 @@ class DisruptionRealization:
             print(f'STATES PRE-ACTION - STEP {step}:')
             self.print_state(step)
 
-            # Convert the dictionary into a tuple of (key, value) pairs
+            # Convert the dictionary into a tuple of (key, cost) pairs
             current_state_key = self.create_hashable_state_key(current_state)
 
-            # Initialize the value for this state
-            if not current_state_key in self.value_function:
-                self.value_function[current_state_key] = 0 if step == 0 else float('-inf')
+            # Initialize the cost for this state
+            if not current_state_key in self.cost_function:
+                self.cost_function[current_state_key] = float('inf')
             best_action_set = None
 
             # Get all possible action combinations for this state
@@ -329,17 +329,16 @@ class DisruptionRealization:
             for action_set in possible_action_sets:
 
                 # Evaluate the action set (this will simulate the next state without modifying the actual state)
-                total_value = self.evaluate_action_set(current_state_key, action_set, step)
-                print(f'\t{total_value} <> {action_set}')
+                total_cost = self.evaluate_action_set(current_state_key, action_set, step)
+                print(f'\t{total_cost} <> {action_set}')
 
-                # Update the value function and best action if this action set is better
-                if total_value > self.value_function[current_state_key]:
-                    self.value_function[current_state_key] = total_value
+                # Update the cost function and best action if this action set is better
+                if total_cost < self.cost_function[current_state_key]:
+                    self.cost_function[current_state_key] = total_cost
                     best_action_set = action_set
-                    best_value = total_value
+                    best_cost = total_cost
 
             if not best_action_set:
-                print(f'\tNo improvement')
                 best_action_set = (('none', 'none', 'none'),
                                    ('none', 'none', 'none'),
                                    ('none', 'none', 'none'),
@@ -347,7 +346,6 @@ class DisruptionRealization:
             print()
             print(f'\tBEST ACTION SET AT STEP {step}')
             print(f'\t----->>>>>>{best_action_set}')
-
             # Store the best action in the policy
             self.policy[step] = best_action_set
 
@@ -359,23 +357,18 @@ class DisruptionRealization:
                 for aircraft_id, aircraft_state in self.states[step-1].items():
                     aircraft_state['conflict_next'] = self.conflict_at_step(aircraft_state['id'], step-1)
 
-            elif step == 0:
-                # apply swaps to next state
-                self.apply_swaps_to_states(step, best_action_set)
-
-                # Check new assignments for conflicts in next (previous) step and current step
-                for aircraft_id, aircraft_state in self.states[step].items():
-                    aircraft_state['conflict_next'] = self.conflict_at_step(aircraft_state['id'], step)
+                # post_decision_state_key = self.create_hashable_state_key(self.states[step-1])
+                # self.cost_function[post_decision_state_key] = best_cost
 
             print()
             print(f'STATES POST-ACTION - STEP {step}:')
             self.print_state(step)
         print(f'\n\n\n')
 
-    def get_future_value(self, next_state_key, action_set):
-        # Return the stored value for the next state from the value function
-        # If the next state has not been evaluated yet, return 0 as its value
-        return self.value_function.get(next_state_key, 0)
+    def get_future_cost(self, next_state_key, action_set):
+        # Return the stored cost for the next state from the cost function
+        # If the next state has not been evaluated yet, return 0 as its cost
+        return self.cost_function.get(next_state_key, 0)
 
     def simulate_action_set_for_evaluation(self, state_key, action_set, step):
         # Create a deep copy of the current system state to simulate changes without affecting the actual state
@@ -399,19 +392,20 @@ class DisruptionRealization:
 
     def evaluate_action_set(self, state_key, action_set, step):
         if step == self.last_step:
-            # If at the last step, there's no future value to add
-            total_value = 0
+            # If at the last step, there's no future cost to add
+            total_cost = 0
         else:
             # Simulate the action set on a temporary state and return the resulting state key
             next_state_key = self.simulate_action_set_for_evaluation(state_key, action_set, step)
             state = self.create_state_dict_from_hashable_key(state_key)
-            reward = self.compute_total_reward(state, action_set)
+            contribution = self.compute_total_contribution(state, action_set)
 
-            # Compute future value for the state key obtained from the simulation
-            future_value = self.get_future_value(next_state_key, action_set)
-            total_value = reward + self.y * future_value
 
-        return total_value
+            # Compute future cost for the state key obtained from the simulation
+            future_cost = self.get_future_cost(next_state_key, action_set)
+            total_cost = contribution + self.y * future_cost
+
+        return total_cost
 
     def simulate_action_set(self, state, action_set, step):
         """
@@ -479,13 +473,10 @@ class DisruptionRealization:
                 post_decision_state[new_aircraft_id]['flights'].append(flight_to_swap)
 
         # Update the states for the previous and current step
-        if step >= 1:
-            next_step = step - 1
+        next_step = step - 1
+        if next_step >= 0:
             self.states[next_step] = post_decision_state
             self.states[step] = post_decision_state
-        else:
-            self.states[step] = post_decision_state
-
 
     def check_conflicts(self, current_state,  step):
         # Check for conflicts in the new assignments
@@ -684,7 +675,7 @@ class DisruptionRealization:
 
 if __name__ == '__main__':
     folder = 'A01_small'
-    # folder = 'A01_small2'
+    folder = 'A01_small2'
     # folder = 'A01_mini'
     aircraft_data, flight_data, rotations_data, disruptions, recovery_start, recovery_end = read_data(folder)
     adm = DisruptionRealization(aircraft_data, flight_data, disruptions, recovery_start, recovery_end)
