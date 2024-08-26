@@ -74,12 +74,12 @@ def read_data(folder):
             att = list(line.split())  # split lines into attributes of aircraft.
             flight_info = {
                 "Flightnr": att[0],
-                "Orig": att[1],
-                "Dest": att[2],
-                "SDT": att[3],
-                "SAT": att[4],
+                'AssignedAircraft': 'None',
                 "ADT": att[3],
                 "AAT": att[4]
+                # "Orig": att[1],
+                # "Dest": att[2]
+
                 # "PrevFlight": att[5]
             }
             flight_data.append(flight_info)
@@ -164,8 +164,6 @@ def read_data(folder):
     for flight in flight_data:
         for rotation in rotations_data:
             if flight['Flightnr'] == rotation['Flightnr']:
-                flight["SAT"] = rotation["DepDate"] + ' ' + flight["SAT"]
-                flight["SDT"] = rotation["DepDate"] + ' ' + flight["SDT"]
                 flight["AAT"] = rotation["DepDate"] + ' ' + flight["AAT"]
                 flight["ADT"] = rotation["DepDate"] + ' ' + flight["ADT"]
 
@@ -192,8 +190,6 @@ def read_data(folder):
 
     # Convert SDT and SAT to Timestamp
     for flight in flight_data:
-        flight['SDT'] = parse_time_string(flight['SDT'])
-        flight['SAT'] = parse_time_string(flight['SAT'])
         flight['ADT'] = parse_time_string(flight['ADT'])
         flight['AAT'] = parse_time_string(flight['AAT'])
 
@@ -203,6 +199,22 @@ def read_data(folder):
             disruption["StartTime"], disruption["EndTime"] = parse_time_string(disruption["StartTime"]), parse_time_string(
                 disruption["EndTime"])
 
+
+    # Remove aircraft from data that are not used in the original schedule:
+    aircraft_data = [
+        aircraft for aircraft in aircraft_data
+        if any(flight_nr in [flight['Flightnr'] for flight in flight_data] for flight_nr in aircraft['AssignedFlights'])
+    ]
+
+    # Remove assigned_flights from aircraft if they are not in the flight schedule
+    for aircraft in aircraft_data:
+        aircraft['AssignedFlights'] = [
+            flight_nr for flight_nr in aircraft['AssignedFlights']
+            if flight_nr in [flight['Flightnr'] for flight in flight_data]
+        ]
+
+    aircraft_data, flight_data = update_data_post_disruptions(aircraft_data, flight_data, disruptions)
+    print(aircraft_data)
     return aircraft_data, flight_data, rotations_data, disruptions, recovery_start, recovery_end
 
 def plot_schedule(aircraft_data, flight_data, disruptions, iteration):
@@ -215,12 +227,10 @@ def plot_schedule(aircraft_data, flight_data, disruptions, iteration):
             # Find the corresponding flight in flight_data
             flight = next((flight for flight in flight_data if flight['Flightnr'] == flight_nr), None)
             if flight is not None:
-                SDT = flight.get('SDT')
-                SAT = flight.get('SAT')
                 ADT = flight.get('ADT')
                 AAT = flight.get('AAT')
 
-                if SDT and SAT and ADT and AAT:
+                if ADT and AAT:
                     # Plot the flight
                     plt.plot([ADT, AAT], [aircraft['ID'], aircraft['ID']], marker='o', color='blue',
                              linewidth=3.5)
@@ -246,9 +256,9 @@ def plot_schedule(aircraft_data, flight_data, disruptions, iteration):
             for aircraft in aircraft_data:
                 if flightnr in aircraft['AssignedFlights']:
                     flight = get_flight_dict(flightnr, flight_data)
-                    ADT = flight['SDT']
-                    AAT = flight['SAT']
-                    if SDT and SAT and ADT and AAT:
+                    ADT = flight['ADT']
+                    AAT = flight['AAT']
+                    if ADT and AAT:
                         plt.plot([ADT, ADT + pd.Timedelta(minutes=delay_minutes)], [aircraft['ID'], aircraft['ID']], linestyle='--',
                                  color='red', linewidth=2)  # Dashed red line for Delay disruption
                         plt.scatter([ADT, ADT + pd.Timedelta(minutes=delay_minutes)], [aircraft['ID'], aircraft['ID']], color='red',
@@ -318,7 +328,7 @@ def affected_flights(disruptions, aircraft_data, flight_data):
                 if aircraft['ID'] == aircraft_id:
                     for flight_nr in aircraft['AssignedFlights']:
                         flight = get_flight_dict(flight_nr, flight_data)
-                        if (flight['SDT'] < end_time) and (flight['SAT'] > start_time):
+                        if (flight['ADT'] < end_time) and (flight['AAT'] > start_time):
                             flights_affected.append((flight_nr, flight))
 
         if disruption['Type'] == 'Delay':
@@ -329,11 +339,6 @@ def affected_flights(disruptions, aircraft_data, flight_data):
 
     return flights_affected
 
-# def all_disrupted_flights(aircraft_data, flight_data, disruptions):
-#     """Returns a list of lists containing flights affected by a disruption for all disruptions """
-#     return [affected_flights(disruption, aircraft_data, flight_data) for disruption in disruptions if
-#             affected_flights(disruption, aircraft_data, flight_data) != []]
-
 def update_data_post_disruptions(aircraft_data, flight_data, disruptions):
     for disruption in disruptions:
         if disruption['Type'] == 'Delay':
@@ -342,11 +347,10 @@ def update_data_post_disruptions(aircraft_data, flight_data, disruptions):
 
             # flight data
             disrupted_flight = get_flight_dict(disrupted_flight_nr, flight_data)
-            disrupted_flight['ADT'] = disrupted_flight['SDT'] + delay
-            disrupted_flight['AAT'] = disrupted_flight['SAT'] + delay
+            disrupted_flight['ADT'] = disrupted_flight['ADT'] + delay
+            disrupted_flight['AAT'] = disrupted_flight['AAT'] + delay
 
     return aircraft_data, flight_data
-
 
 def get_flight_dict(flight_nr, flight_data):
     """Get flight data for a specified flight nr"""
@@ -362,9 +366,16 @@ def get_aircraft_dict(flight_nr, aircraft_data):
 def ac_index(aircraft_data, aircraft_id):
     """Retrieve index of aircraft in aircraft_data list"""
     for idx, aircraft in enumerate(aircraft_data):
+        # print(f"Inspecting aircraft at index {idx}: {aircraft}")
         if aircraft['ID'] == aircraft_id:
             return idx
     return -1  # Return -1 if the tail number is not found
+
+# def get_ac_dict(aircraft_data, aircraft_id):
+#     return aircraft_data[ac_index(aircraft_data, aircraft_id)]
+
+def get_ac_dict(aircraft_data, aircraft_id):
+    return next(aircraft for aircraft in aircraft_data if aircraft['ID'] == aircraft_id)
 
 def flight_index(flight_data, flight_nr):
     """Retrieve index of flight in flight_data list"""
@@ -372,6 +383,7 @@ def flight_index(flight_data, flight_nr):
         if flight['Flightnr'] == flight_nr:
             return idx
     return -1  # Return -1 if the flight number is not found
+
 
 if __name__ == "__main__":
     # Read intial data:

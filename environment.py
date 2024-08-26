@@ -24,14 +24,15 @@ class AircraftRecovery(gym.Env):
         self.recovery_start = recovery_start
         self.recovery_end = recovery_end
 
-        # delay options in minutes:
-        self.delay_options = [20, 40, 60, 80, 100, 120, 140, 160, 180]
-
-        # Define action space: swap aircraft assignments
+        # Define action space sizes for swaps and delays:
         # Calculate the total action space size
         self.swap_action_space_size = len(flight_data) * len(aircraft_data)
+        # delay options in minutes:
+        self.delay_options = [20, 40, 60, 80, 100, 120, 140, 160, 180]
         self.delay_action_space_size = len(flight_data) * len(self.delay_options)
-        # +1 for do nothing:
+        # +1 for do nothing
+
+        # Calculate the total action space size
         # self.action_space_size = self.swap_action_space_size + self.delay_action_space_size # SWAPS + DELAYS
         self.action_space_size = self.swap_action_space_size + 1  # ONLY SWAPS
         self.action_space = spaces.Discrete(self.action_space_size)
