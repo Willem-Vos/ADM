@@ -682,6 +682,7 @@ class DisruptionRealization:
             print(f'\t{aircraft_id}: {aircraft_state}')
         print()
 
+
 if __name__ == '__main__':
     folder = 'A01_small'
     # folder = 'A01_small2'
