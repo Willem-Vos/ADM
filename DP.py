@@ -699,6 +699,6 @@ if __name__ == '__main__':
     print()
     print()
     print()
+    print("POLCIY:")
     for step, action in adm.policy.items():
-        print(f'state: {step}')
-        print(f'actions: {action}')
+        print(f'{step} -> {action}')

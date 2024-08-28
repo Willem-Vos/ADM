@@ -6,27 +6,41 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import seaborn as sns
+import datetime as dt
 import warnings
 warnings.filterwarnings("ignore")
 
 # folder = 'A01_example'
 folder = 'A01_small'
 colors = sns.color_palette("husl", 10)  # Change the number based on the number of airports
+add_dates = True # leave out dates if all data is on the same date
+
 
 # Helper function to parse time strings
-def parse_time_string(time_str):
-    ''' # Helper function to parse time strings, input is string in format "DD/MM/YYYY HH:MM" '''
-    if '+1' in time_str:
-        # Remove the +1 and parse the time string
-        time_str = time_str.replace('+1', '')
-        timestamp = pd.to_datetime(time_str, format='%d/%m/%y %H:%M')
-        # Add one day to the timestamp
-        timestamp += pd.Timedelta(days=1)
-    else:
-        # Parse the time string directly
-        timestamp = pd.to_datetime(time_str, format='%d/%m/%y %H:%M')
+def parse_time_string(time_str, add_dates):
+    '''Helper function to parse time strings, input can be in format "DD/MM/YYYY HH:MM" or just "HH:MM"'''
 
-    return timestamp
+    try:
+        # Try to parse as full datetime
+        if '+1' in time_str:
+            # Remove the +1 and parse the time string
+            time_str = time_str.replace('+1', '')
+            timestamp = pd.to_datetime(time_str, format='%d/%m/%y %H:%M')
+            # Add one day to the timestamp
+            timestamp += pd.Timedelta(days=1)
+        else:
+            timestamp = pd.to_datetime(time_str, format='%d/%m/%y %H:%M')
+
+        if add_dates:
+            return timestamp  # Return the full datetime
+        else:
+            return timestamp.time()  # Return only the time part
+
+    except ValueError:
+        # If it fails, assume it's just a time
+        timestamp = pd.to_datetime(time_str, format='%H:%M').time()
+        return timestamp
+
 
 def read_data(folder):
     """Reads data from files in specified folder and returns lists of disctionaries containing informations on aircraft, flights, rotations, and disruptions respectively"""
@@ -37,8 +51,8 @@ def read_data(folder):
         recovery_start_str = str(att[0] + ' ' + att[1])
         recovery_end_str = str(att[2] + ' ' + att[3])
         print(recovery_start_str, recovery_end_str)
-        recovery_start = parse_time_string(recovery_start_str)
-        recovery_end = parse_time_string(recovery_end_str)
+        recovery_start = parse_time_string(recovery_start_str, add_dates)
+        recovery_end = parse_time_string(recovery_end_str, add_dates)
 
 
     ############################################## SCHEDULE DATA: ##############################################
@@ -160,12 +174,16 @@ def read_data(folder):
     ###################################################################################################################
 
 
-    # Add dates to timestrings of flights
+    # Add dates to timestrings of flights if add_dates=True
     for flight in flight_data:
         for rotation in rotations_data:
             if flight['Flightnr'] == rotation['Flightnr']:
-                flight["AAT"] = rotation["DepDate"] + ' ' + flight["AAT"]
-                flight["ADT"] = rotation["DepDate"] + ' ' + flight["ADT"]
+                if add_dates:
+                    flight["AAT"] = rotation["DepDate"] + ' ' + flight["AAT"]
+                    flight["ADT"] = rotation["DepDate"] + ' ' + flight["ADT"]
+
+
+
 
     # Fill the "AssignedFlights" attribute of the aircraft
     for aircraft in aircraft_data:
@@ -190,14 +208,15 @@ def read_data(folder):
 
     # Convert SDT and SAT to Timestamp
     for flight in flight_data:
-        flight['ADT'] = parse_time_string(flight['ADT'])
-        flight['AAT'] = parse_time_string(flight['AAT'])
+        flight['ADT'] = parse_time_string(flight['ADT'], add_dates)
+        flight['AAT'] = parse_time_string(flight['AAT'], add_dates)
 
     # Convert "StartTime" and "EndTime" to Timestamps for airport and aircraft disruptions (not needed for flight delays)
     for disruption in disruptions:
         if disruption['Type'] != "Delay":
-            disruption["StartTime"], disruption["EndTime"] = parse_time_string(disruption["StartTime"]), parse_time_string(
-                disruption["EndTime"])
+            disruption["StartTime"], disruption["EndTime"] = parse_time_string(disruption["StartTime"],
+                                                                                      add_dates), parse_time_string(
+                disruption["EndTime"], add_dates)
 
 
     # Remove aircraft from data that are not used in the original schedule:
@@ -220,6 +239,8 @@ def read_data(folder):
 def plot_schedule(aircraft_data, flight_data, disruptions, iteration):
     # Plotting
     plt.figure(figsize=(12, 5))
+    fallback_date = dt.date(2000, 1, 1)
+
 
     # plot flights
     for aircraft in aircraft_data:
@@ -227,8 +248,12 @@ def plot_schedule(aircraft_data, flight_data, disruptions, iteration):
             # Find the corresponding flight in flight_data
             flight = next((flight for flight in flight_data if flight['Flightnr'] == flight_nr), None)
             if flight is not None:
-                ADT = flight.get('ADT')
-                AAT = flight.get('AAT')
+                if add_dates:
+                    ADT = flight.get('ADT')
+                    AAT = flight.get('AAT')
+                else:
+                    ADT = dt.datetime.combine(fallback_date, flight['ADT'])
+                    AAT = dt.datetime.combine(fallback_date, flight['AAT'])
 
                 if ADT and AAT:
                     # Plot the flight
@@ -243,8 +268,12 @@ def plot_schedule(aircraft_data, flight_data, disruptions, iteration):
     # Plot disruptions
     for disruption in disruptions:
         if disruption["Type"] == 'AU':
-            start_time = disruption['StartTime']
-            end_time = disruption['EndTime']
+            if add_dates:
+                start_time = disruption['StartTime']
+                end_time = disruption['EndTime']
+            else:
+                start_time = dt.datetime.combine(fallback_date, disruption['StartTime'])
+                end_time = dt.datetime.combine(fallback_date, disruption['EndTime'])
             plt.plot([start_time, end_time], [disruption['Aircraft'], disruption['Aircraft']], linestyle='--',
                      color='orange', linewidth=2)  # Dashed orange line for disruption
             plt.scatter([start_time, end_time], [disruption['Aircraft'], disruption['Aircraft']], color='orange',
@@ -388,7 +417,9 @@ def flight_index(flight_data, flight_nr):
 if __name__ == "__main__":
     # Read intial data:
     aircraft_data, flight_data, rotations_data, disruptions, recovery_start, recovery_end = read_data(folder)
-    print(affected_flights(disruptions, aircraft_data, flight_data))
+    print(disruptions)
+    print(aircraft_data)
+    print(flight_data)
     # Plot initial data:
     plot_schedule(aircraft_data, flight_data, disruptions, iteration='before update')
     # plot_time_space(flight_data)
