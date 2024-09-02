@@ -10,8 +10,8 @@ import datetime as dt
 import warnings
 warnings.filterwarnings("ignore")
 
-# folder = 'A01_example'
-folder = 'A01_small'
+folder = 'A01_example'
+# folder = 'A01_small'
 colors = sns.color_palette("husl", 10)  # Change the number based on the number of airports
 add_dates = True # leave out dates if all data is on the same date
 
@@ -40,7 +40,6 @@ def parse_time_string(time_str, add_dates):
         # If it fails, assume it's just a time
         timestamp = pd.to_datetime(time_str, format='%H:%M').time()
         return timestamp
-
 
 def read_data(folder):
     """Reads data from files in specified folder and returns lists of disctionaries containing informations on aircraft, flights, rotations, and disruptions respectively"""
@@ -233,7 +232,10 @@ def read_data(folder):
         ]
 
     aircraft_data, flight_data = update_data_post_disruptions(aircraft_data, flight_data, disruptions)
-    print(aircraft_data)
+    print(f'--> {len(aircraft_data)} Aircraft')
+    print(f'--> {len(flight_data)} Flights')
+
+
     return aircraft_data, flight_data, rotations_data, disruptions, recovery_start, recovery_end
 
 def plot_schedule(aircraft_data, flight_data, disruptions, iteration):

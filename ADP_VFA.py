@@ -1,15 +1,5 @@
-import gym
-from gym import spaces
-import numpy as np
-import pandas as pd
-import random
-import copy
 from itertools import product
-from preprocessing import *
 from environment import *
-# TODO:
-# Reward structure en initial state values revisen
-#
 
 
 
@@ -35,24 +25,23 @@ class VFA_ADP:
         self.period_length = pd.Timedelta(minutes=interval)
 
 
-        self.N = 1 # number of iterations
+        self.N = 3 # number of iterations
         self.y = 1 # discount factor
-        self.a = 0.02 # learning rate, or stepsize; fixed
+        self.a = 0.2 # learning rate or stepsize, fixed
 
         # States
         self.states = dict()
 
         # intial value is lowest possible value: All flights conflicted and all aircraft perform swap
         self.initial_value = -1000 * num_flights + (-10 * num_aircraft)
-        self.initial_state(initial_value= self.initial_value)
-
+        self.initial_state =  self.initialize_state(initial_value=self.initial_value)
         # copy of states to trace back policy and visualize solution:
         self.states_copy = copy.deepcopy(self.states)
 
 
 
 # INITIALIZATION FUNCTIONS:
-    def initial_state(self, initial_value):
+    def initialize_state(self, initial_value):
         step = 0
         self.states = {}
         state_dict = dict()
@@ -373,24 +362,34 @@ class VFA_ADP:
         :return: n/a
         """
 
-        print('\nSolve with VFA:')
+        print('\n\n\n\nSolve with VFA:')
         print("------------------------------------")
-        # iterations or episodes
-        for n in range(1, int(self.N) + 1):
+        # Track objective function value for each iteration
+        objective_function_values = {}
 
+        # iterations or episodes
+        for n in range(1, int(self.N)+1):
+            print(f'##############################################################################################################################')
+            print(f'################################################### Iteration: {n} ###########################################################')
+            print(f'##############################################################################################################################')
             # initial state
-            next_state = self.initial_state(self.initial_value)
+            next_state = self.initial_state
 
             aqcuired_rewards = []
             for t in self.steps:
                 print(f'\n##################### t: {t} #########################')
                 # select current state (use a copy of the current state)
                 current_state = next_state
-                self.plot_schedule(current_state)
                 print(f'\nCurrent state: {current_state}\n')
+
+                if n == self.N:
+                    self.plot_schedule(current_state)
+                    self.print_states()
+
 
                 if t == self.T:
                     objective_value = sum(aqcuired_rewards)
+                    objective_function_values[n] = objective_value
                     print(f'aqcuired rewards: {aqcuired_rewards}')
                     print(f'Objective value: {objective_value}')
                     break
@@ -403,28 +402,27 @@ class VFA_ADP:
                 # reward_per_move stores the reward (immediate and downstream) for all possible moves
                 reward_per_action_set = {}
                 immediate_rewards = {}
+                print(f'{len(valid_action_sets)} valid action sets')
                 # calculate immediate rewards for each action set at time t and store in reward_per_action_set
                 for action_set in  valid_action_sets:
                     immediate_reward = self.compute_total_reward(current_state, action_set)
                     # print(f'{immediate_reward} <> {action_set}')
                     # Get the next state following the action set applied:
-                    post_decision_state = self.apply_action_set_to_state(current_state, action_set)
-                    post_decision_state_key = self.create_hashable_state_key(post_decision_state)
+                    temp_post_decision_state = self.apply_action_set_to_state(current_state, action_set, t, n)
+                    temp_post_decision_state_key = self.create_hashable_state_key(temp_post_decision_state)
 
-                    if post_decision_state_key in self.states:
-                        downstream_reward = self.states[post_decision_state_key]['value'][-1]
-                    else:
-                        # downstream rewards gets closer to zero when less time on horizon
-                        downstream_reward = self.initial_value * (self.T - t) / self.T
 
+                    # Calculate the expected future reward
+                    downstream_reward = temp_post_decision_state['value'][-1]
                     reward_per_action_set[action_set] = immediate_reward + self.y * downstream_reward  # T EN ACTION ALS KEYS? DOET DE TIJD ERTOE?
                     immediate_rewards[action_set] = immediate_reward
 
 
-                # Get best action set and following state
+                # Get best action set and following post-decission state
                 best_action_set = max(reward_per_action_set, key=reward_per_action_set.get)
-                post_decision_state = self.apply_action_set_to_state(current_state, best_action_set)
+                post_decision_state = self.apply_action_set_to_state(current_state, best_action_set, t, n)
                 post_decision_state_key = self.create_hashable_state_key(post_decision_state)
+
                 print(f'best action set: {best_action_set}')
                 print(f'Best immediate and downstream reward: {reward_per_action_set[best_action_set]}')
 
@@ -438,35 +436,50 @@ class VFA_ADP:
                 current_values = self.states[current_state_key]['value']
                 current_value = self.states[current_state_key]['value'][-1]
                 if len(current_values) > 1:
-                    print("First Value iteration for state:")
                     print(f'new_value = (1 - {self.a}) * {current_value} + {self.a} * {reward_per_action_set[best_action_set]}')
+                    # Approximation function
                     new_value = (1 - self.a) * current_value + self.a * reward_per_action_set[best_action_set]
 
                 else:
+                    print("First Value iteration for state:")
                     new_value = reward_per_action_set[best_action_set]
 
 
                 # Add newly calculated value and current iteration to state
                 print(f'Updated approximate value = {new_value}')
+                current_state = self.states[current_state_key]
                 self.states[current_state_key]['iteration'].append(n)
                 self.states[current_state_key]['value'].append(new_value)
 
                 print(f'Pre decision State: {current_state}')
                 print(f'Post decision State: {post_decision_state}')
 
-
                 # Add the post decisions state to states and update state for the next iteration:
                 self.states[post_decision_state_key] = post_decision_state
                 next_state = post_decision_state
 
-                # # transition
-                # if t < self.last_period:
-                #     # select greedy move (if epsilon > 0)
-                #     greedy_move = random.choice(self.nodes)
-                #     move = random.choices(population=[best_move, greedy_move],
-                #                           weights=[1 - self.epsilon, self.epsilon])[0]
+        self.plot_objective_values(objective_function_values)
 
-    def apply_action_set_to_state(self, current_state, action_set):
+    def plot_objective_values(self, objective_function_values):
+        # Extract iterations and corresponding objective values
+        iterations = list(objective_function_values.keys())
+        objective_values = list(objective_function_values.values())
+
+        # Plotting
+        plt.figure(figsize=(10, 6))
+        plt.plot(iterations, objective_values, linestyle='-', color='r', label='Objective Value')
+
+        # Adding labels and title
+        plt.xlabel('Iteration')
+        plt.ylabel('Objective Value')
+        plt.title('Objective Value at Each Iteration')
+        plt.grid(True)
+        plt.legend()
+
+        # Show the plot
+        plt.show()
+
+    def apply_action_set_to_state(self, current_state, action_set, t, n):
         """
         Apply the given action set to the current state and return the resulting next state.
 
@@ -509,6 +522,17 @@ class VFA_ADP:
         # Lastly, set the time of the new state to the next step:
         next_state['t'] = current_step + 1
 
+        next_state_key = self.create_hashable_state_key(next_state)
+        if not next_state_key in self.states:
+            # if it is a newly expored state: calculated the intial value as function of timestep
+            # downstream rewards gets closer to zero when less time on horizon
+            next_state['value'] = [self.initial_value * (self.T - next_state['t'])  / self.T]
+            next_state['iteration'] = [n]
+        else:
+            # if state is already explored, value list is same as already explored value list
+            # if state is already explored, iteration list is same as already exlpored iteration list
+            next_state['value'] = copy.deepcopy(self.states[next_state_key]['value'])
+            next_state['iteration'] = copy.deepcopy(self.states[next_state_key]['iteration'])
         # Return the updated state as the next state
         return next_state
 
@@ -552,17 +576,27 @@ class VFA_ADP:
                                     color='orange',
                                     marker='x', s=100)  # Markers for disruption start and end
 
-                    elif (disruption["Type"] == 'Delay' and
-                          flight_nr in [f['Flightnr'] for f in aircraft_state['flights']]):
+                    elif disruption["Type"] == 'Delay':
+                        disrupted_flight_nr = disruption['Flightnr']
                         delay_minutes = int(disruption['Delay'])
-                        if flight_nr in [f['Flightnr'] for f in aircraft_state['flights']]:
+                        flight = self.get_flight(disrupted_flight_nr, state)
+                        aircraft_delayed = None
+                        for aircraft in self.aircraft_ids:
+                            ac_state = state[aircraft]  # This should match the current aircraft in the loop
+                            if any(flight['Flightnr'] == disrupted_flight_nr for flight in ac_state['flights']):
+                                aircraft_delayed = aircraft
+                                break
+
+
+
+                        if aircraft_id == aircraft_delayed:
                             ADT = flight['ADT']
                             AAT = flight['AAT']
                             if ADT and AAT:
-                                plt.plot([ADT, ADT + pd.Timedelta(minutes=delay_minutes)], [aircraft_id, aircraft_id],
+                                plt.plot([ADT - pd.Timedelta(minutes=delay_minutes), ADT], [aircraft_id, aircraft_id],
                                          linestyle='--',
                                          color='red', linewidth=2)  # Dashed red line for Delay disruption
-                                plt.scatter([ADT, ADT + pd.Timedelta(minutes=delay_minutes)],
+                                plt.scatter([ADT - pd.Timedelta(minutes=delay_minutes), ADT],
                                             [aircraft_id, aircraft_id], color='red',
                                             marker='x', s=100)  # Markers for Delay disruption start and end
 
@@ -591,10 +625,12 @@ class VFA_ADP:
 
     def print_states(self):
         print('STATES:')
-        for step in self.steps:
-            print(f'step {step}')
-            for aircraft_id, aircraft_state in self.states[step].items():
-                print(f'\t{aircraft_id}: {aircraft_state}')
+        for state_key, state in self.states.items():
+            print(f't: {state['t']}:')
+            for aircraft in self.aircraft_ids:
+                print(f'{aircraft}: {state[aircraft]}')
+            print(f'Values: {state["value"][(self.N - 10):]}')
+            print(f'Iterations: {state["iteration"]}')
         print()
 
     def print_state(self, state_key):
@@ -608,14 +644,18 @@ class VFA_ADP:
 
 
 if __name__ == '__main__':
-    # folder = 'A01_small'
+    folder = 'A01_small'
     # folder = 'A01_small2'
-    folder = 'A01_mini'
+    # folder = 'A01_mini'
+    folder = 'A01_example'
+
     aircraft_data, flight_data, rotations_data, disruptions, recovery_start, recovery_end = read_data(folder)
     m = VFA_ADP(aircraft_data, flight_data, disruptions, recovery_start, recovery_end)
-    initial_state = m.initial_state(m.initial_value)
+    for disruption in m.disruptions:
+        print(disruption)
+    initial_state = m.initialize_state(m.initial_value)
     for state_key, state in m.states.items():
         m.print_state(state_key)
     print(m.states)
     m.solve_with_vfa()
-    # m.plot_schedule(initial_state)
+    m.plot_schedule(initial_state)
