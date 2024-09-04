@@ -2,11 +2,6 @@ from itertools import product
 from environment import *
 import random
 
-# TODO:
-# disrupted flights in the state space??
-
-
-
 
 class VFA_ADP:
     def __init__(self, aircraft_data, flight_data, disruptions, recovery_start, recovery_end):

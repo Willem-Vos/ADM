@@ -2,10 +2,6 @@ from itertools import product
 from environment import *
 import random
 
-# TODO:
-# disrupted flights in the state space??
-
-
 
 
 class VFA_ADP:
@@ -204,21 +200,6 @@ class VFA_ADP:
             if disruption["Type"] == "AU" and disruption['Aircraft'] == aircraft_id:
                 return (disruption['StartTime'] <= flight['ADT'] <= disruption['EndTime'] or
                         flight['ADT'] <= disruption['StartTime'] <= flight['AAT'])
-
-    def has_flight_in_next_period(self, aircraft_state, step):
-        """Check if the aircraft departs a flight in the next period. Return True/False and corresponding flight"""
-        current_time = self.periods[step]
-        next_time = self.periods[step + 1] if step + 1 < len(self.steps) else None
-
-        # If there's no next time (i.e., at the last step), return False
-        if not next_time:
-            return False, None
-
-        for flight in aircraft_state['flights']:
-            if current_time <= flight['ADT'] < next_time:
-                return True, flight
-
-        return False, None
 
     def conflict_at_step(self, state, aircraft_id, t):
         aircraft_state = state[aircraft_id]
@@ -536,7 +517,6 @@ class VFA_ADP:
 
         self.plot_objective_values(objective_function_values)
 
-
     def simulate_action_to_state(self, current_state, action, t, n):
         '''Does the same as apply action to state, run when checking actions. Run apply_action_to_state for actually appliying actions'''
         # Create a copy of the current state to modify
@@ -775,16 +755,6 @@ class VFA_ADP:
 
         plt.legend()
         plt.show()
-
-    def print_states(self):
-        print('STATES:')
-        for state_key, state in self.states.items():
-            print(f't: {state['t']}:')
-            for aircraft in self.aircraft_ids:
-                print(f'{aircraft}: {state[aircraft]}')
-            print(f'Values: {state["value"][(self.N - 10):]}')
-            print(f'Iterations: {state["iteration"]}')
-        print()
 
     def print_state(self, state):
         print(f't: {state['t']}')
