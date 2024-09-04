@@ -1,5 +1,5 @@
 import sys
-
+import copy
 sys.path.append('/opt/anaconda3/lib/python3.11/site-packages')
 
 import pandas as pd
@@ -10,14 +10,16 @@ import datetime as dt
 import warnings
 warnings.filterwarnings("ignore")
 
-folder = 'A01_example'
+folder = 'A01_example_greedy'
 # folder = 'A01_small'
+# folder = 'A05_6088570'
+
 colors = sns.color_palette("husl", 10)  # Change the number based on the number of airports
-add_dates = True # leave out dates if all data is on the same date
+add_dates = True # False out dates if all data is on the same date
 
 
 # Helper function to parse time strings
-def parse_time_string(time_str, add_dates):
+def parse_time_string(time_str):
     '''Helper function to parse time strings, input can be in format "DD/MM/YYYY HH:MM" or just "HH:MM"'''
 
     try:
@@ -30,14 +32,11 @@ def parse_time_string(time_str, add_dates):
             timestamp += pd.Timedelta(days=1)
         else:
             timestamp = pd.to_datetime(time_str, format='%d/%m/%y %H:%M')
-
-        if add_dates:
-            return timestamp  # Return the full datetime
-        else:
-            return timestamp.time()  # Return only the time part
+        return timestamp
 
     except ValueError:
         # If it fails, assume it's just a time
+        print(f'Time string {time_str} is invalid')
         timestamp = pd.to_datetime(time_str, format='%H:%M').time()
         return timestamp
 
@@ -50,8 +49,8 @@ def read_data(folder):
         recovery_start_str = str(att[0] + ' ' + att[1])
         recovery_end_str = str(att[2] + ' ' + att[3])
         print(recovery_start_str, recovery_end_str)
-        recovery_start = parse_time_string(recovery_start_str, add_dates)
-        recovery_end = parse_time_string(recovery_end_str, add_dates)
+        recovery_start = parse_time_string(recovery_start_str)
+        recovery_end = parse_time_string(recovery_end_str)
 
 
     ############################################## SCHEDULE DATA: ##############################################
@@ -133,6 +132,7 @@ def read_data(folder):
                 }
                 disruptions.append(aircraft_disruption)
 
+
     # Flight Disruptions:
     with open(f'Data/{folder}/alt_flights.csv', 'r') as file:
         # %Flight DepDate Delay
@@ -168,6 +168,13 @@ def read_data(folder):
                     "EndTime": att[3] + ' ' + att[4]  # Timesstamp for end of disruption
                 }
                 disruptions.append(airport_disruption)
+    r = []
+    for rotation in rotations_data:
+        if rotation['Flightnr'] not in r:
+            r.append(rotation['Flightnr'])
+        else:
+            print(f'Rotation {rotation["Flightnr"]} double in rotations')
+
 
     # print(f'Disruptions: {disruptions}')
     ###################################################################################################################
@@ -177,11 +184,8 @@ def read_data(folder):
     for flight in flight_data:
         for rotation in rotations_data:
             if flight['Flightnr'] == rotation['Flightnr']:
-                if add_dates:
-                    flight["AAT"] = rotation["DepDate"] + ' ' + flight["AAT"]
-                    flight["ADT"] = rotation["DepDate"] + ' ' + flight["ADT"]
-
-
+                flight["AAT"] = rotation["DepDate"] + ' ' + flight["AAT"]
+                flight["ADT"] = rotation["DepDate"] + ' ' + flight["ADT"]
 
 
     # Fill the "AssignedFlights" attribute of the aircraft
@@ -207,15 +211,16 @@ def read_data(folder):
 
     # Convert SDT and SAT to Timestamp
     for flight in flight_data:
-        flight['ADT'] = parse_time_string(flight['ADT'], add_dates)
-        flight['AAT'] = parse_time_string(flight['AAT'], add_dates)
+        flight['ADT'] = parse_time_string(flight['ADT'])
+        flight['AAT'] = parse_time_string(flight['AAT'])
 
     # Convert "StartTime" and "EndTime" to Timestamps for airport and aircraft disruptions (not needed for flight delays)
     for disruption in disruptions:
         if disruption['Type'] != "Delay":
-            disruption["StartTime"], disruption["EndTime"] = parse_time_string(disruption["StartTime"],
-                                                                                      add_dates), parse_time_string(
-                disruption["EndTime"], add_dates)
+            disruption["StartTime"], disruption["EndTime"] = parse_time_string(
+                disruption["StartTime"]), parse_time_string(disruption["EndTime"])
+        elif disruption['Type'] == "AC":
+            pass
 
 
     # Remove aircraft from data that are not used in the original schedule:

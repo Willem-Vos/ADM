@@ -94,3 +94,45 @@ def plot_schedule(self, step):
 
     plt.legend()
     plt.show()
+
+
+def delay_swapped_flight(self, next_state, aircraft_id, swapped_flight, overlapping_flights):
+    temp_next_state = copy.deepcopy(next_state)
+
+
+    for overlapping_flight in overlapping_flights:
+        # Case 1: Overlapping flight departs earlier, delay the swapped flight
+        if overlapping_flight['ADT'] < swapped_flight['ADT']:
+            new_start_time = overlapping_flight['AAT'] + pd.Timedelta(minutes=10)
+            flight_duration = swapped_flight['AAT'] - swapped_flight['ADT']
+            new_end_time = new_start_time + flight_duration
+
+            delay = new_start_time - swapped_flight['ADT']
+
+            # Apply the delay to the swapped flight
+            swapped_flight['ADT'] = new_start_time
+            swapped_flight['AAT'] = new_end_time
+
+        # Case 2: Overlapping flight departs later, delay the overlapping flight
+        else:
+            new_start_time = swapped_flight['AAT'] + pd.Timedelta(minutes=10)
+            flight_duration = overlapping_flight['AAT'] - overlapping_flight['ADT']
+            new_end_time = new_start_time + flight_duration
+
+            delay = new_start_time - overlapping_flight['ADT']
+            total_delay += delay
+
+            # Apply the delay to the overlapping flight
+            overlapping_flight['ADT'] = new_start_time
+            overlapping_flight['AAT'] = new_end_time
+
+        # Check if the delayed swapped flight or overlapping flight causes further conflicts
+        for flight in temp_next_state[aircraft_id]['flights']:
+            if flight != swapped_flight and flight != overlapping_flight:
+                if self.overlaps(swapped_flight, flight) or self.overlaps(overlapping_flight, flight):
+                    # If delaying either the swapped flight or the overlapping flight causes a new conflict, return None
+                    return None
+
+    # Return the updated next state and total delay applied
+    next_state = temp_next_state
+    return next_state

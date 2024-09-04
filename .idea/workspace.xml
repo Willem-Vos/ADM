@@ -5,23 +5,41 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="6291196f-5dc1-4c5c-b2f5-59a3beac3516" name="Changes" comment="Value Function Approximation added.">
+      <change afterPath="$PROJECT_DIR$/.idea/codeStyles/codeStyleConfig.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ADP_VFA_main.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ADP_VFA_main_single_delays.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ADP_VFA_sequential.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ADP_VFA_single.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy/aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy/airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy/alt_aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy/alt_airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy/alt_flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy/config.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy/dist.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy/flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy/itineraries.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy/position.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy/rotations.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy2/aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy2/airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy2/alt_aircraft.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy2/alt_airports.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy2/alt_flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy2/config.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy2/dist.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy2/flights.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy2/itineraries.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy2/position.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy2/rotations.csv" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ADP_VFA.py" beforeDir="false" afterPath="$PROJECT_DIR$/ADP_VFA.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/DP.py" beforeDir="false" afterPath="$PROJECT_DIR$/DP.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/DP_costs.py" beforeDir="false" afterPath="$PROJECT_DIR$/old/DP_costs.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Data/A01_example/aircraft.csv" beforeDir="false" afterPath="$PROJECT_DIR$/Data/A01_example/aircraft.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Data/A01_example/airports.csv" beforeDir="false" afterPath="$PROJECT_DIR$/Data/A01_example/airports.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Data/A01_example/alt_aircraft.csv" beforeDir="false" afterPath="$PROJECT_DIR$/Data/A01_example/alt_aircraft.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Data/A01_example/alt_airports.csv" beforeDir="false" afterPath="$PROJECT_DIR$/Data/A01_example/alt_airports.csv" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Data/A01_example/alt_flights.csv" beforeDir="false" afterPath="$PROJECT_DIR$/Data/A01_example/alt_flights.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Data/A01_example/config.csv" beforeDir="false" afterPath="$PROJECT_DIR$/Data/A01_example/config.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Data/A01_example/dist.csv" beforeDir="false" afterPath="$PROJECT_DIR$/Data/A01_example/dist.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Data/A01_example/flights.csv" beforeDir="false" afterPath="$PROJECT_DIR$/Data/A01_example/flights.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Data/A01_example/itineraries.csv" beforeDir="false" afterPath="$PROJECT_DIR$/Data/A01_example/itineraries.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Data/A01_example/position.csv" beforeDir="false" afterPath="$PROJECT_DIR$/Data/A01_example/position.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Data/A01_example/rotations.csv" beforeDir="false" afterPath="$PROJECT_DIR$/Data/A01_example/rotations.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dynamic_program.py" beforeDir="false" afterPath="$PROJECT_DIR$/old/dynamic_program.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Data/A01_small2/alt_aircraft.csv" beforeDir="false" afterPath="$PROJECT_DIR$/Data/A01_small2/alt_aircraft.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Data/A01_small2/flights.csv" beforeDir="false" afterPath="$PROJECT_DIR$/Data/A01_small2/flights.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Data/A05_6088570/alt_aircraft.csv" beforeDir="false" afterPath="$PROJECT_DIR$/Data/A05_6088570/alt_aircraft.csv" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/preprocessing.py" beforeDir="false" afterPath="$PROJECT_DIR$/preprocessing.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scratch.py" beforeDir="false" afterPath="$PROJECT_DIR$/scratch.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -57,11 +75,14 @@
 }</component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/ADP_VFA.py" root0="SKIP_INSPECTION" />
-    <setting file="file://$PROJECT_DIR$/ADP_VFA_alt_initial_values.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/ADP_VFA_main.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/ADP_VFA_main_propagated.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/ADP_VFA_sequential.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/ADP_VFA_single.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/DP.py" root0="SKIP_INSPECTION" />
-    <setting file="file://$PROJECT_DIR$/DP_costs.py" root0="SKIP_INSPECTION" />
-    <setting file="file://$PROJECT_DIR$/dynamic_program.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/environment.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/old/DP_costs.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/old/dynamic_program.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/preprocessing.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/scratch.py" root0="SKIP_INSPECTION" />
   </component>
@@ -82,6 +103,12 @@
     "Python.ADP_VFA.executor": "Run",
     "Python.ADP_VFA_alt_initial_values.executor": "Run",
     "Python.ADP_VFA_alt_rewards.executor": "Run",
+    "Python.ADP_VFA_main.executor": "Run",
+    "Python.ADP_VFA_main_propagated.executor": "Run",
+    "Python.ADP_VFA_sequential.executor": "Run",
+    "Python.ADP_VFA_single.executor": "Run",
+    "Python.ADP_VFA_single_actionswithac.executor": "Run",
+    "Python.ADP_VFA_single_conflicts.executor": "Run",
     "Python.DP_costs.executor": "Run",
     "Python.DP_table.executor": "Run",
     "Python.DP_table_nostep.executor": "Run",
@@ -103,7 +130,7 @@
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "reference.settings.ide.settings.new.ui",
+    "settings.editor.selected.configurable": "preferences.sourceCode.Python",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
@@ -111,6 +138,7 @@
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$" />
       <recent name="$PROJECT_DIR$/Data" />
+      <recent name="$PROJECT_DIR$/Data/A01_small" />
       <recent name="$PROJECT_DIR$/Data/A02_6088570" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
@@ -118,8 +146,8 @@
       <recent name="$PROJECT_DIR$/old" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.ADP_VFA">
-    <configuration name="ADP_VFA" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+  <component name="RunManager" selected="Python.ADP_VFA_main">
+    <configuration name="ADP_VFA_main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="ADM" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -133,7 +161,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/ADP_VFA.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/ADP_VFA_main.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -142,7 +170,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="ADP_VFA" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="ADP_VFA_main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="ADM" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -156,7 +184,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/ADP_VFA.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/ADP_VFA_main.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -165,7 +193,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="DP" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="ADP_VFA_sequential" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="ADM" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -179,7 +207,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/DP.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/ADP_VFA_sequential.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -188,7 +216,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="dynamic_program" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="ADP_VFA_single" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="ADM" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -202,7 +230,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/old/dynamic_program.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/ADP_VFA_single.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -211,7 +239,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="preprocessing" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="ADP_VFA_single_actionswithac" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="ADM" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -225,7 +253,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/preprocessing.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/ADP_VFA_single_actionswithac.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -236,11 +264,11 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.ADP_VFA" />
-        <item itemvalue="Python.DP_table_nostep" />
-        <item itemvalue="Python.dynamic_program" />
-        <item itemvalue="Python.preprocessing" />
-        <item itemvalue="Python.ADP_VFA_alt_initial_values" />
+        <item itemvalue="Python.ADP_VFA_main" />
+        <item itemvalue="Python.ADP_VFA_main_propagated" />
+        <item itemvalue="Python.ADP_VFA_single" />
+        <item itemvalue="Python.ADP_VFA_single_actionswithac" />
+        <item itemvalue="Python.ADP_VFA_sequential" />
       </list>
     </recent_temporary>
   </component>
@@ -261,7 +289,7 @@
       <option name="presentableId" value="Default" />
       <updated>1723105977878</updated>
       <workItem from="1723122959068" duration="96687000" />
-      <workItem from="1724067759070" duration="226515000" />
+      <workItem from="1724067759070" duration="299862000" />
     </task>
     <task id="LOCAL-00001" summary="small changes">
       <option name="closed" value="true" />
@@ -311,7 +339,15 @@
       <option name="project" value="LOCAL" />
       <updated>1724837746502</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="Value Function Approximation added.">
+      <option name="closed" value="true" />
+      <created>1725273512912</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1725273512912</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -355,16 +391,21 @@
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/ADM$all_flights.coverage" NAME="alt_states Coverage Results" MODIFIED="1724660928410" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/ADM$ADP_VFA.coverage" NAME="ADP_VFA Coverage Results" MODIFIED="1725272053573" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/ADM$environment.coverage" NAME="environment Coverage Results" MODIFIED="1724438584915" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ADM$ADP_VFA.coverage" NAME="ADP_VFA Coverage Results" MODIFIED="1725366695455" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ADM$ADP_VFA_main_propagated.coverage" NAME="ADP_VFA_main_propagated Coverage Results" MODIFIED="1725465289249" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ADM$environment.coverage" NAME="environment Coverage Results" MODIFIED="1725345772968" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ADM$ADP_VFA_sequential.coverage" NAME="ADP_VFA_sequential Coverage Results" MODIFIED="1725376439104" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ADM$ADP_VFA_single_actionswithac.coverage" NAME="ADP_VFA_single_actionswithac Coverage Results" MODIFIED="1725381606427" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$centralized_dynamic_program.coverage" NAME="centralized_dynamic_program Coverage Results" MODIFIED="1724660855652" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$dynamic_program.coverage" NAME="dynamic_program Coverage Results" MODIFIED="1725266352301" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$scratch.coverage" NAME="scratch Coverage Results" MODIFIED="1724342245985" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ADM$ADP_VFA_single.coverage" NAME="ADP_VFA_single Coverage Results" MODIFIED="1725391673158" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$DP_table.coverage" NAME="DP_table Coverage Results" MODIFIED="1724675156058" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$DP_costs.coverage" NAME="DP_costs Coverage Results" MODIFIED="1724684664576" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$ADP_VFA_alt_rewards.coverage" NAME="ADP_VFA Coverage Results" MODIFIED="1724928815621" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/ADM$preprocessing.coverage" NAME="preprocessing Coverage Results" MODIFIED="1724929108355" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ADM$preprocessing.coverage" NAME="preprocessing Coverage Results" MODIFIED="1725284558437" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$environment2.coverage" NAME="dynamic_program Coverage Results" MODIFIED="1724436811477" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ADM$ADP_VFA_single_conflicts.coverage" NAME="ADP_VFA_main Coverage Results" MODIFIED="1725465527307" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$Environment.coverage" NAME="Environment Coverage Results" MODIFIED="1723123241323" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$DP_table_nostep.coverage" NAME="DP Coverage Results" MODIFIED="1725266410322" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>

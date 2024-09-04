@@ -1,5 +1,10 @@
 from itertools import product
 from environment import *
+import random
+
+# TODO:
+# disrupted flights in the state space??
+
 
 
 
@@ -21,19 +26,20 @@ class VFA_ADP:
         self.intervals = pd.date_range(start=recovery_start, end=recovery_end, freq= str(interval)+'T')
         self.periods = {i: start for i, start in enumerate(self.intervals)}
         self.steps = [i for i in self.periods.keys()]
-        self.T = self.steps[-1]
         self.period_length = pd.Timedelta(minutes=interval)
 
 
-        self.N = 3 # number of iterations
+        self.T = self.steps[-1]
+        self.N = 1 # number of iterations
         self.y = 1 # discount factor
         self.a = 0.2 # learning rate or stepsize, fixed
+        self.epsilon = 0.5 # random state transition for exploration probabilty
 
         # States
         self.states = dict()
 
         # intial value is lowest possible value: All flights conflicted and all aircraft perform swap
-        self.initial_value = -1000 * num_flights + (-10 * num_aircraft)
+        self.initial_value = -1000 * num_flights
         self.initial_state =  self.initialize_state(initial_value=self.initial_value)
         # copy of states to trace back policy and visualize solution:
         self.states_copy = copy.deepcopy(self.states)
@@ -42,17 +48,18 @@ class VFA_ADP:
 
 # INITIALIZATION FUNCTIONS:
     def initialize_state(self, initial_value):
-        step = 0
+        t = 0
         self.states = {}
         state_dict = dict()
         state_dict['t'] = 0
         for aircraft in self.aircraft_data:
             aircraft_state = {}
             aircraft_id = aircraft['ID']
-            ass_flights = self.ass_flights(aircraft_id, step)
-            conflict = self.initialize_conflict_at_step(aircraft_id, step)
+            ass_flights = self.ass_flights(aircraft_id, t)
+            conflict = self.initialize_conflict_at_step(aircraft_id, t)
+            unavailibilty = self.initialize_unavailable(aircraft_id, t)
 
-            aircraft_state = {'id': aircraft_id, 'conflict': conflict, 'flights':ass_flights}
+            aircraft_state = {'conflict': conflict, 'UA': unavailibilty, 'flights':ass_flights}
             state_dict[aircraft_id] = aircraft_state
 
         # set value of the state to initial value and iteration to zero:
@@ -64,7 +71,7 @@ class VFA_ADP:
 
         return state_dict
 
-    def ass_flights(self, aircraft_id, step):
+    def ass_flights(self, aircraft_id, t):
         """Returns a list of copies flight dictionaries (with nr, adt, aat) assigned to an aircraft at a step, read from the data for intializing the states"""
         ass_flights = []
         flight_nrs = get_ac_dict(self.aircraft_data, aircraft_id)['AssignedFlights']
@@ -74,27 +81,24 @@ class VFA_ADP:
             ass_flights.append(flight)
         return ass_flights
 
-    def initialize_conflict_at_step(self, aircraft_id, step):
-        if step > self.T:
+    def initialize_conflict_at_step(self, aircraft_id, t):
+        if t > self.T:
             return 0
         conflict = False
-        has_flight, flight = self.intialize_has_flight_in_next_period(aircraft_id, step)
+        has_flight, flight = self.intialize_has_flight_in_next_period(aircraft_id, t)
         if flight:
             unavailable = self.unavailable_for_flight(flight, aircraft_id)
 
         if has_flight and unavailable:
             conflict = True
 
-        if aircraft_id == 'A320#2' and step == 3:
-            print(conflict)
-
         return 1 if conflict else 0
 
-    def intialize_has_flight_in_next_period(self, aircraft_id, step):
+    def intialize_has_flight_in_next_period(self, aircraft_id, t):
         """Check if the aircraft departs a flight in the next period. Return True/False and corresponding flight"""
-        current_time = self.periods[step]
+        current_time = self.periods[t]
         periods = self.periods
-        next_time = self.periods[step + 1] if step + 1 < self.T else None
+        next_time = self.periods[t + 1] if t + 1 < self.T else None
 
         # If there's no next time (i.e., at the last step), return False
         if not next_time:
@@ -108,6 +112,17 @@ class VFA_ADP:
 
         return False, None
 
+    def initialize_unavailable(self, aircraft_id, t):
+        unavailabilities = []
+        for disruption in self.disruptions:
+            unavailability = {}
+            if disruption['Aircraft'] == aircraft_id:
+                unavailabilities.append( (disruption['StartTime'], disruption['EndTime']) )
+        return unavailabilities
+
+
+    def initialize_initial_values(self):
+        pass
 
 ######### HELPER FUNCTIONS: #########
     def get_flight(self, flight_nr, current_state):
@@ -136,6 +151,7 @@ class VFA_ADP:
         # Add each aircraft's state to the key
         for aircraft_id in self.aircraft_ids:
             aircraft_state = state_dict[aircraft_id]
+
             # Convert the flights list to a tuple of tuples (each flight dict converted to a tuple)
             if aircraft_state['flights']:
                 flights_tuple = tuple(
@@ -144,11 +160,18 @@ class VFA_ADP:
             else:
                 flights_tuple = tuple()
 
-            # Create a tuple for the current aircraft's state
+            # Convert the UA list of tuples to a tuple of tuples
+            if aircraft_state['UA']:
+                ua_tuple = tuple(aircraft_state['UA'])
+            else:
+                ua_tuple = tuple()
+
+            # Create a tuple for the current aircraft's state, including 'conflict', 'UA', and 'flights'
             aircraft_state_key = (
-                aircraft_state['id'],
-                aircraft_state['conflict'],
-                flights_tuple
+                aircraft_id,  # Add the aircraft_id to the tuple
+                aircraft_state['conflict'],  # Include conflict status
+                ua_tuple,  # Include unavailability status as a tuple of tuples
+                flights_tuple  # Include flights as a tuple of tuples
             )
 
             # Add the aircraft state key to the list of keys
@@ -223,10 +246,10 @@ class VFA_ADP:
 
         return False, None
 
-    def conflict_at_step(self, aircraft_state, step):
+    def conflict_at_step(self, state, aircraft_id, t):
+        aircraft_state = state[aircraft_id]
         conflict = False
-        aircraft_id = aircraft_state['id']
-        has_flight, flight = self.has_flight_in_next_period(aircraft_state, step)
+        has_flight, flight = self.has_flight_in_next_period(aircraft_state, t)
         if flight:
             unavailable = self.unavailable_for_flight(flight, aircraft_id)
 
@@ -243,112 +266,96 @@ class VFA_ADP:
                 (flight_to_swap['ADT'] >= flight['ADT'] and flight_to_swap['AAT'] <= flight['AAT'])
                 )
 
-    def get_individual_actions(self, aircraft_state, step):
-        """ Returns a list of all possible actions for one aircraft, no restrictions yet"""
-        possible_actions = [('none', 'none', 'none')]
-        aircraft_id = aircraft_state['id']
+    def disrupted(self, unavailability, flight):
+        """Checks if two flight times overlap"""
+        start = unavailability[0]
+        end = unavailability[1]
 
+        return (start <= flight['ADT'] <= end or
+                start <= flight['AAT'] <= fend or
+                (start <= flight['ADT'] and end >= flight['AAT']) or
+                (start >= flight['ADT'] and end <= flight['AAT'])
+                )
+
+    def get_actions(self, current_state):
+        all_actions = [('none', 'none', 'none')]
+        for aircraft_id in self.aircraft_ids:
+            aircraft_state = current_state[aircraft_id]
+
+            # Iterate over all flights of the current aircraft
+            for flight in aircraft_state['flights']:
+                flight_nr = flight['Flightnr']
+                flight_to_swap = self.get_flight(flight_nr, current_state)  # flight dict
+
+                # Consider swapping this flight to every other aircraft
+                for other_aircraft_id in self.aircraft_ids:
+                    if other_aircraft_id == aircraft_id:
+                        continue
+
+                    # 2. Check if the new aircraft can perform the flight
+                    if self.unavailable_for_flight(flight_to_swap, other_aircraft_id):  # flight_dict, str
+                        continue  # Skip this swap if the new aircraft cannot perform the flight
+
+                    # If all checks pass, add this as a possible action
+                    all_actions += [('swap', flight_nr, other_aircraft_id)]
+
+        return all_actions
+
+    def get_aircraft_actions(self, current_state, aircraft_id):
+        aircraft_state = current_state[aircraft_id]
+        actions = [('none', 'none', 'none')]
         # Iterate over all flights of the current aircraft
         for flight in aircraft_state['flights']:
             flight_nr = flight['Flightnr']
+            flight_to_swap = self.get_flight(flight_nr, current_state)  # flight dict
 
             # Consider swapping this flight to every other aircraft
             for other_aircraft_id in self.aircraft_ids:
-                if other_aircraft_id != aircraft_id:  # Exclude swapping to the same aircraft
-                    possible_actions.append(('swap', flight_nr, other_aircraft_id))
-        return possible_actions
-
-    def get_valid_action_sets(self, current_state):
-        step = current_state['t']
-
-        # No action at last step:
-        if step == self.T:
-            return [tuple((('none', 'none', 'none') for _ in range(len(self.aircraft_ids))))]
-
-        # Generate all possible actions for individual aircraft
-        all_individual_actions = {}
-        for aircraft_id in self.aircraft_ids:
-            aircraft_state = current_state[aircraft_id]
-            all_individual_actions[aircraft_id] = self.get_individual_actions(aircraft_state, step)
-
-        # Generate all possible combinations of actions
-        all_action_sets = list(product(*all_individual_actions.values()))
-
-        # now check all combinations for validity
-        valid_action_sets = []
-        for action_set in all_action_sets:
-            # Validate each action set
-            if self.is_valid_action_set(action_set, current_state):
-                valid_action_sets.append(action_set)
-
-        return valid_action_sets
-
-    def is_valid_action_set(self, action_set, current_state):
-        step = current_state['t']
-        swapped_flights = {}
-
-        for action in action_set:
-            action_type, flight_nr, new_aircraft_id = action
-
-            if action_type == 'swap':
-                flight_to_swap = self.get_flight(flight_nr, current_state) # flight dict
-                new_aircraft_flights = current_state[new_aircraft_id]['flights'] # list of flight dicts
-
-                # 1. Check for overlap with existing flights on the new aircraft
-                for assigned_flight in new_aircraft_flights:
-                    if self.overlaps(flight_to_swap, assigned_flight):
-                        return False
+                if other_aircraft_id == aircraft_id:
+                    continue
 
                 # 2. Check if the new aircraft can perform the flight
-                if self.unavailable_for_flight(flight_to_swap, new_aircraft_id): # flight_dict, str
-                    return False
+                if self.unavailable_for_flight(flight_to_swap, other_aircraft_id):  # flight_dict, str
+                    continue  # Skip this swap if the new aircraft cannot perform the flight
 
-                # 3. Track swapped flights to check for overlaps in future iterations
-                if new_aircraft_id not in swapped_flights:
-                    swapped_flights[new_aircraft_id] = []
-                swapped_flights[new_aircraft_id].append(flight_to_swap)
+                # If all checks pass, add this as a possible action
+                actions += [('swap', flight_nr, other_aircraft_id)]
 
-        # 3. Check for overlaps in swapped flights
-        for flights in swapped_flights.values():
-            for i, flight1 in enumerate(flights):
-                for flight2 in flights[i + 1:]:
-                    if self.overlaps(flight1, flight2):
-                        return False
+        return actions
 
-        return True
+    def count_conflict(self, state):
+        count = 0
+        for aircraft_id in self.aircraft_ids:
+            aircraft_state = state[aircraft_id]
+            for flight in aircraft_state['flights']:
+                for unavailability in aircraft_state['unavailability']:
+                    if self.disrupted(unavailability, flight):
 
-    def compute_total_reward(self, current_state, action_set):
-        total_reward = 0
-        for aircraft_id, action in zip(self.aircraft_ids, action_set):
+                        count += 1
+
+    def get_conflicted_aircraft(self, current_state):
+        conflicted_aircraft =[]
+        for aircraft_id in self.aircraft_ids:
             aircraft_state = current_state[aircraft_id]
-            individual_reward = self.compute_individual_reward(aircraft_state, action)
-            total_reward += individual_reward
-        return total_reward
+            if aircraft_state['conflict']:
+                conflicted_aircraft.append(aircraft_id)
+        return conflicted_aircraft
 
-    def compute_individual_reward(self, aircraft_state, action):
+    def compute_individual_reward(self, current_state, next_state, action):
         reward = 0
-
-        aircraft_id, conflict, flights = aircraft_state.values()
-        action_type, flight_nr, new_aircraft_id = action
-
-        if action_type == 'swap':
-            reward += -10               # cost of swapping
-            if conflict == 1:
-                reward += 0             # conflict averted
-
-            elif conflict == 0:
-                reward += 0             # Avoid unnecessary swaps
-
-        elif action_type == 'none':
-            if conflict == 1:      # No action is taken when in conflict at next step
+        action_type, flightnr, new_aircraft_id = action
+        conflicted_pre = self.get_conflicted_aircraft(current_state)
+        conflicted_post = self.get_conflicted_aircraft(next_state)
+        print(conflicted_pre)
+        print(conflicted_post)
+        for conflict in conflicted_pre:
+            if conflict in conflicted_post:
+                print(f'aircraft {conflict} conflict not resolved')
                 reward -= 1000
 
-            elif conflict == 0:    #
-                reward += 0
 
-        # if aircraft_state['id'] == 'B777#1' and action == ('swap', '4', 'B767#1') and conflict == 1:
-        #     print('REWARD', reward)
-
+        if action_type == 'swap':
+            reward += -10
         return reward
 
 
@@ -374,79 +381,72 @@ class VFA_ADP:
             print(f'##############################################################################################################################')
             # initial state
             next_state = self.initial_state
-
-            aqcuired_rewards = []
+            self.plot_schedule(next_state)
+            accumulated_rewards = []
             for t in self.steps:
-                print(f'\n##################### t: {t} #########################')
-                # select current state (use a copy of the current state)
-                current_state = next_state
-                print(f'\nCurrent state: {current_state}\n')
-
+                print(f'\n##################### t: {t} ##################################################')
                 if n == self.N:
-                    self.plot_schedule(current_state)
-                    self.print_states()
+                    self.plot_schedule(next_state)
 
-
-                if t == self.T:
-                    objective_value = sum(aqcuired_rewards)
-                    objective_function_values[n] = objective_value
-                    print(f'aqcuired rewards: {aqcuired_rewards}')
-                    print(f'Objective value: {objective_value}')
-                    break
-
+                current_state = copy.deepcopy(next_state)
                 current_state_key = self.create_hashable_state_key(current_state)
-
-                # Get possible action sets.
-                valid_action_sets = self.get_valid_action_sets(current_state)
-
-                # reward_per_move stores the reward (immediate and downstream) for all possible moves
-                reward_per_action_set = {}
+                print(f'Pre decision State: {current_state}')
+                print(f'Pre decision State value: {current_state['value']}')
+                action_values = {}
                 immediate_rewards = {}
-                print(f'{len(valid_action_sets)} valid action sets')
-                # calculate immediate rewards for each action set at time t and store in reward_per_action_set
-                for action_set in  valid_action_sets:
-                    immediate_reward = self.compute_total_reward(current_state, action_set)
-                    # print(f'{immediate_reward} <> {action_set}')
-                    # Get the next state following the action set applied:
-                    temp_post_decision_state = self.apply_action_set_to_state(current_state, action_set, t, n)
-                    temp_post_decision_state_key = self.create_hashable_state_key(temp_post_decision_state)
+                action_states = {}
 
+                for aircraft_id in self.aircraft_ids:
+                    rewards = []
+                    ac_actions = self.get_aircraft_actions(current_state, aircraft_id)
+                    # calculate immediate rewards for each action set at time t and store in action_values
+                    for action in ac_actions:
+                        # immediate_reward = self.compute_individual_reward(current_state, action)
 
-                    # Calculate the expected future reward
-                    downstream_reward = temp_post_decision_state['value'][-1]
-                    reward_per_action_set[action_set] = immediate_reward + self.y * downstream_reward  # T EN ACTION ALS KEYS? DOET DE TIJD ERTOE?
-                    immediate_rewards[action_set] = immediate_reward
+                        temp_post_decision_state = self.apply_action_to_state(current_state, action, t, n)
+                        temp_post_decision_state_key = self.create_hashable_state_key(temp_post_decision_state)
+
+                        immediate_reward = self.compute_individual_reward(current_state, temp_post_decision_state, action)
+                        # Calculate the expected future reward
+                        downstream_reward = temp_post_decision_state['value'][-1]
+                        action_values[action] = immediate_reward + self.y * downstream_reward
+                        immediate_rewards[action] = immediate_reward
+                        action_states[action] = temp_post_decision_state
+                        print(aircraft_id)
+                        print(f'Reward, downstream reward, value: {immediate_reward}, {downstream_reward}, {action_values[action]} <> {action}')
 
 
                 # Get best action set and following post-decission state
-                best_action_set = max(reward_per_action_set, key=reward_per_action_set.get)
-                post_decision_state = self.apply_action_set_to_state(current_state, best_action_set, t, n)
+                print(f'Action Values: {action_values}')
+                best_action = max(action_values, key=action_values.get)
+                print(f'\nbest action: {best_action}')
+
+                best_value = action_values[best_action]
+                best_new_state = action_states[best_action]
+                print(f'Bestvalue: {best_value}')
+                # print(f'Best State: {best_new_state}\n')
+                # print(f'Worst reward and value: {worst_immediate_reward}, {worst_value}')
+                # print(f'Worst State: {worst_new_state}\n')
+
+                post_decision_state = self.apply_action_to_state(current_state, best_action, t, n)
                 post_decision_state_key = self.create_hashable_state_key(post_decision_state)
 
-                print(f'best action set: {best_action_set}')
-                print(f'Best immediate and downstream reward: {reward_per_action_set[best_action_set]}')
-
-
-                # get the immediate reward corresponding to the best action set and keep track of acquired rewards
-                best_immediate_reward = immediate_rewards[best_action_set]
-                aqcuired_rewards.append(best_immediate_reward)
-                print(f'Best immediate reward: {best_immediate_reward}')
 
                 # calculate new approximate value of the current state
                 current_values = self.states[current_state_key]['value']
                 current_value = self.states[current_state_key]['value'][-1]
-                if len(current_values) > 1:
-                    print(f'new_value = (1 - {self.a}) * {current_value} + {self.a} * {reward_per_action_set[best_action_set]}')
-                    # Approximation function
-                    new_value = (1 - self.a) * current_value + self.a * reward_per_action_set[best_action_set]
 
+                if len(current_values) > 1:
+                    # print(f'new_value = (1 - {self.a}) * {current_value} + {self.a} * {best_value}')
+                    # Approximation function
+                    new_value = (1 - self.a) * current_value + self.a * best_value
                 else:
-                    print("First Value iteration for state:")
-                    new_value = reward_per_action_set[best_action_set]
+                    # print("First Value iteration for state:")
+                    new_value = best_value
 
 
                 # Add newly calculated value and current iteration to state
-                print(f'Updated approximate value = {new_value}')
+                # print(f'Updated approximate value = {new_value}')
                 current_state = self.states[current_state_key]
                 self.states[current_state_key]['iteration'].append(n)
                 self.states[current_state_key]['value'].append(new_value)
@@ -458,28 +458,18 @@ class VFA_ADP:
                 self.states[post_decision_state_key] = post_decision_state
                 next_state = post_decision_state
 
+
+
+            objective_value = sum(accumulated_rewards)
+            print(f'Objective value for iteration {n}: {objective_value}')
+            print(f'rewards: {accumulated_rewards}')
+
+            # Store the objective value for this iteration
+            objective_function_values[n] = objective_value
+
         self.plot_objective_values(objective_function_values)
 
-    def plot_objective_values(self, objective_function_values):
-        # Extract iterations and corresponding objective values
-        iterations = list(objective_function_values.keys())
-        objective_values = list(objective_function_values.values())
-
-        # Plotting
-        plt.figure(figsize=(10, 6))
-        plt.plot(iterations, objective_values, linestyle='-', color='r', label='Objective Value')
-
-        # Adding labels and title
-        plt.xlabel('Iteration')
-        plt.ylabel('Objective Value')
-        plt.title('Objective Value at Each Iteration')
-        plt.grid(True)
-        plt.legend()
-
-        # Show the plot
-        plt.show()
-
-    def apply_action_set_to_state(self, current_state, action_set, t, n):
+    def apply_action_to_state(self, current_state, action, t, n):
         """
         Apply the given action set to the current state and return the resulting next state.
 
@@ -493,76 +483,108 @@ class VFA_ADP:
         # Create a copy of the current state to modify
         next_state = copy.deepcopy(current_state)
         current_step = next_state['t']
+        next_step = current_step + 1
 
-        # MODIFY NEXT STATE:
-        # Apply each action in the action set to the corresponding aircraft
-        for action, aircraft_id in zip(action_set, self.aircraft_ids):
-            action_type, flight_nr, new_aircraft_id = action
+        action_type, flight_nr, new_aircraft_id = action
+
+        if action_type == 'swap':
+            old_aircraft_id = next((aircraft_id for aircraft_id, aircraft_state in current_state.items() if
+                                    aircraft_id != 't' and
+                                    any(flight['Flightnr'] == flight_nr for flight in aircraft_state['flights'])), None)
+
+            old_aircraft_state = current_state[old_aircraft_id]
+
+            # Find the flight in the current aircraft's stateflight_nr
+            flight_to_swap = next(flight for flight in old_aircraft_state['flights'] if flight['Flightnr'] == flight_nr)
+
+            # Remove the flight from the old aircraft and assign it to the new aircraft
+            next_state[new_aircraft_id]['flights'].append(flight_to_swap)
+            next_state[old_aircraft_id]['flights'].remove(flight_to_swap)
+
+        if action_type == 'none':
+            # nothing happens to the assignments when doing nothing.
+            pass
+
+        for i, aircraft_id in enumerate(self.aircraft_ids):
             aircraft_state = next_state[aircraft_id]
+            aircraft_state['conflict'] = self.conflict_at_step(next_state, aircraft_id, next_step) if t != self.T else 0
 
-            if action_type == 'swap':
-                old_aircraft_id = aircraft_id
-
-                # Find the flight in the current aircraft's state
-                flight_to_swap = next(flight for flight in aircraft_state['flights'] if flight['Flightnr'] == flight_nr)
-
-                # Remove the flight from the old aircraft and assign it to the new aircraft
-                next_state[new_aircraft_id]['flights'].append(flight_to_swap)
-                next_state[old_aircraft_id]['flights'].remove(flight_to_swap)
-
-            if action_type == 'none':
-                # nothing happens to the assignments when doing nothing.
-                pass
-
-        # Check new assignments for conflicts in next step and current step and update
-        for aircraft_id in self.aircraft_ids:
-            aircraft_state = next_state[aircraft_id]
-            aircraft_state['conflict'] = self.conflict_at_step(aircraft_state, current_step+1)
-
-        # Lastly, set the time of the new state to the next step:
-        next_state['t'] = current_step + 1
+        # update time for next state:
+        next_state['t'] = next_step
 
         next_state_key = self.create_hashable_state_key(next_state)
         if not next_state_key in self.states:
+
             # if it is a newly expored state: calculated the intial value as function of timestep
             # downstream rewards gets closer to zero when less time on horizon
-            next_state['value'] = [self.initial_value * (self.T - next_state['t'])  / self.T]
+            next_state['value'] = [self.initial_value * (self.T - next_step)  / self.T]
             next_state['iteration'] = [n]
         else:
             # if state is already explored, value list is same as already explored value list
             # if state is already explored, iteration list is same as already exlpored iteration list
+            print(f'STATE ALREADY IN STATES DICT')
             next_state['value'] = copy.deepcopy(self.states[next_state_key]['value'])
             next_state['iteration'] = copy.deepcopy(self.states[next_state_key]['iteration'])
+
         # Return the updated state as the next state
         return next_state
 
-
     #################### VISUALIZE ###################
-    def plot_schedule(self, state, action=None):
+
+    def plot_objective_values(self, objective_function_values):
+        # Extract iterations and corresponding objective values
+        iterations = list(objective_function_values.keys())
+        objective_values = list(objective_function_values.values())
+
+        # Plotting
+        plt.figure(figsize=(10, 6))
+        plt.plot(iterations, objective_values, linestyle='-', marker= 'x', color='r', label='Objective Value')
+
+        # Adding labels and title
+        plt.xlabel('Iteration')
+        plt.ylabel('Objective Value')
+        plt.title('Objective Value at Each Iteration')
+        plt.grid(True)
+        plt.legend()
+
+        # Show the plot
+        plt.show()
+
+    def plot_schedule(self, state):
         # Plotting
         plt.figure(figsize=(10, 5))
 
         # Get the states for the specified step
         step = state['t']
+
         # Plot flights based on the stored order
         for aircraft_id in self.aircraft_ids:
             aircraft_state = state.get(aircraft_id)
 
             if aircraft_state:
-                for flight in aircraft_state['flights']:
-                    ADT = flight.get('ADT')
-                    AAT = flight.get('AAT')
-                    flight_nr = flight.get('Flightnr')
+                if aircraft_state['flights']:
+                    for flight in aircraft_state['flights']:
+                        ADT = flight.get('ADT')
+                        AAT = flight.get('AAT')
+                        flight_nr = flight.get('Flightnr')
 
-                    if ADT and AAT:
-                        # Plot the flight
-                        plt.plot([ADT, AAT], [aircraft_id, aircraft_id], marker='o', color='blue',
-                                 linewidth=3.5)
-                        # Calculate the midpoint of the flight for labeling
-                        midpoint_time = ADT + (AAT - ADT) / 2
-                        # Add the flight number as a label in the middle of the flight
-                        plt.text(midpoint_time, aircraft_id, flight_nr,
-                                 verticalalignment='bottom', horizontalalignment='center', fontsize=10, color='black')
+                        if ADT and AAT:
+                            # Plot the flight
+                            plt.plot([ADT, AAT], [aircraft_id, aircraft_id], marker='o', color='blue',
+                                     linewidth=3.5)
+                            # Calculate the midpoint of the flight for labeling
+                            midpoint_time = ADT + (AAT - ADT) / 2
+                            # Add the flight number as a label in the middle of the flight
+                            plt.text(midpoint_time, aircraft_id, flight_nr,
+                                     verticalalignment='bottom', horizontalalignment='center', fontsize=10,
+                                     color='black')
+                else:
+                    # Plot a placeholder for aircraft with no flights assigned
+                    plt.plot([self.recovery_start, self.recovery_end], [aircraft_id, aircraft_id], marker='|',
+                             color='gray',
+                             linewidth=2, linestyle=':')
+                    plt.text(self.recovery_start, aircraft_id, 'No Flights',
+                             verticalalignment='bottom', horizontalalignment='left', fontsize=8, color='gray')
 
                 # Plot disruptions
                 for disruption in self.disruptions:
@@ -587,8 +609,6 @@ class VFA_ADP:
                                 aircraft_delayed = aircraft
                                 break
 
-
-
                         if aircraft_id == aircraft_delayed:
                             ADT = flight['ADT']
                             AAT = flight['AAT']
@@ -612,7 +632,7 @@ class VFA_ADP:
 
         plt.xlabel('Time')
         plt.ylabel('Aircraft')
-        plt.title(f'Aircraft Flight Schedule: step: {step} - action: {action}')
+        plt.title(f'Aircraft Flight Schedule: step: {step}')
         plt.grid(True)
 
         # Format x-axis to show only time
@@ -645,9 +665,10 @@ class VFA_ADP:
 
 if __name__ == '__main__':
     folder = 'A01_small'
-    # folder = 'A01_small2'
+    folder = 'A01_small2'
     # folder = 'A01_mini'
-    folder = 'A01_example'
+    # folder = 'A01_example'
+    # folder = 'A01_example_greedy'
 
     aircraft_data, flight_data, rotations_data, disruptions, recovery_start, recovery_end = read_data(folder)
     m = VFA_ADP(aircraft_data, flight_data, disruptions, recovery_start, recovery_end)
