@@ -28,7 +28,7 @@ class VFA_ADP:
 
 
         self.T = self.steps[-1]
-        self.N = 100 # number of iterations
+        self.N = 1 # number of iterations
         self.y = 1 # discount factor
         self.a = 0.2 # learning rate or stepsize, fixed
         self.epsilon = 0.5 # random state transition for exploration probabilty
@@ -270,7 +270,7 @@ class VFA_ADP:
 
         return overlapping_flights  # Return sorted overlapping flights
 
-    def delay_swapped_flight(self, next_state, aircraft_id, changed_flight, overlapping_flights):
+    def delay_swapped_flight(self, next_state, aircraft_id, changed_flight, overlapping_flights, apply):
         """
         Delay the swapped flight and potentially other flights to prevent overlap.
 
@@ -288,15 +288,14 @@ class VFA_ADP:
         if not overlapping_flights:
             return None
 
-        # if changed_flight['Flightnr'] == '10' and step == 0:
-        #     print(f'\n##################################')
-        #     print(f'##################################')
-        #     print(f'Flights overlapping flight 10: {[flight["Flightnr"] for flight in overlapping_flights]}')
-        #     print(f'##################################')
-        #     print(f'##################################\n')
-
         # Process each overlapping flight
         while overlapping_flights:
+            if apply:
+                print(f'\n##################################')
+                print(f'Changed Flight = {changed_flight['Flightnr']} is assigned to {aircraft_id}')
+                print(f'{[flight["Flightnr"] for flight in overlapping_flights]}')
+
+
             for overlapping_flight in overlapping_flights:
                 # Case 1: Swapped/changed flight departs later, delay swapped/changed flight
                 if overlapping_flight['ADT'] < changed_flight['ADT']:
@@ -304,33 +303,52 @@ class VFA_ADP:
                     flight_duration = changed_flight['AAT'] - changed_flight['ADT']
                     new_end_time = new_start_time + flight_duration
 
+                    if apply:
+                        print(f'Delayed flight {changed_flight["Flightnr"]} with {new_start_time - changed_flight["ADT"]}')
+
+
                     # Apply the delay to the swapped/changed flight
                     changed_flight['ADT'] = new_start_time
                     changed_flight['AAT'] = new_end_time
                     delayed_flight = changed_flight
+
+                    # IMPORTANT: Update the flight in the temp_next_state
+                    for i, flight in enumerate(temp_next_state[aircraft_id]['flights']):
+                        if flight['Flightnr'] == delayed_flight['Flightnr']:
+                            temp_next_state[aircraft_id]['flights'][i] = delayed_flight
 
                 # Case 2: Overlapping flight departs later, delay the overlapping flight
                 else:
                     new_start_time = changed_flight['AAT'] + pd.Timedelta(minutes=10)
                     flight_duration = overlapping_flight['AAT'] - overlapping_flight['ADT']
                     new_end_time = new_start_time + flight_duration
+                    if apply:
+                        print(f'Delayed flight {overlapping_flight["Flightnr"]} with {new_start_time - overlapping_flight["ADT"]}')
 
                     # Apply the delay to the overlapping flight
                     overlapping_flight['ADT'] = new_start_time
                     overlapping_flight['AAT'] = new_end_time
                     delayed_flight = overlapping_flight
 
+                    # IMPORTANT: Update the flight in the temp_next_state
+                    for i, flight in enumerate(temp_next_state[aircraft_id]['flights']):
+                        if flight['Flightnr'] == delayed_flight['Flightnr']:
+                            temp_next_state[aircraft_id]['flights'][i] = delayed_flight
 
-            # if changed_flight['Flightnr'] == '2':
-            #     print('Overlaps before new check:')
-            #     print(f'{[flight['Flightnr'] for flight in overlapping_flights]}')
-            #
+
             # Re-check for new conflicts after each delay
+            if apply:
+                print(f'Check overlapping assignment for newly changed flight: {delayed_flight}')
             overlapping_flights = self.check_overlapping_assignments(temp_next_state, aircraft_id, delayed_flight)
+            if apply:
+                print(f'Overlapping flights:')
+                print(f'{[flight for flight in overlapping_flights]}')
             changed_flight = delayed_flight
 
+
+
             # If new conflicts emerge, continue the loop, otherwise break
-            if not overlapping_flights:
+            if not overlapping_flights or overlapping_flights == []:
                 break
 
         next_state = temp_next_state
@@ -543,8 +561,8 @@ class VFA_ADP:
             # 2 Check for overlaps and delay flights if possible:
             swapped_flight = flight_to_swap
             overlapping_flights = self.check_overlapping_assignments(next_state, new_aircraft_id, swapped_flight)
-            if overlapping_flights != [] and self.delay_swapped_flight(next_state, new_aircraft_id, swapped_flight, overlapping_flights) is not None:
-                next_state = copy.deepcopy(self.delay_swapped_flight(next_state, new_aircraft_id, swapped_flight, overlapping_flights))
+            if overlapping_flights != [] and self.delay_swapped_flight(next_state, new_aircraft_id, swapped_flight, overlapping_flights, apply=False) is not None:
+                next_state = copy.deepcopy(self.delay_swapped_flight(next_state, new_aircraft_id, swapped_flight, overlapping_flights, apply=False))
 
         if action_type == 'none':
             # nothing happens to the assignments when doing nothing.
@@ -608,8 +626,9 @@ class VFA_ADP:
             # 2 Check for overlaps and delay flights if possible:
             swapped_flight = flight_to_swap
             overlapping_flights = self.check_overlapping_assignments(next_state, new_aircraft_id, swapped_flight)
-            if overlapping_flights != [] and self.delay_swapped_flight(next_state, new_aircraft_id, swapped_flight, overlapping_flights) is not None:
-                next_state = copy.deepcopy(self.delay_swapped_flight(next_state, new_aircraft_id, swapped_flight, overlapping_flights))
+            # if overlapping_flights != [] and self.delay_swapped_flight(next_state, new_aircraft_id, swapped_flight, overlapping_flights, apply=True) is not None:
+            if overlapping_flights != []:
+                next_state = copy.deepcopy(self.delay_swapped_flight(next_state, new_aircraft_id, swapped_flight, overlapping_flights, apply=True))
 
         if action_type == 'none':
             # nothing happens to the assignments when doing nothing.
@@ -670,6 +689,9 @@ class VFA_ADP:
         # Get the states for the specified step
         step = state['t']
 
+        # Flags to ensure 'Unavailability' is added to the legend only once
+        au_label_added = False
+
         # Plot flights based on the stored order
         for aircraft_id in self.aircraft_ids[::-1]:
             aircraft_state = state.get(aircraft_id)
@@ -684,7 +706,7 @@ class VFA_ADP:
                         if ADT and AAT:
                             # Plot the flight
                             plt.plot([ADT, AAT], [aircraft_id, aircraft_id], marker='o', color='blue',
-                                     linewidth=3.5)
+                                     linewidth=4, markersize=1)
                             # Calculate the midpoint of the flight for labeling
                             midpoint_time = ADT + (AAT - ADT) / 2
                             # Add the flight number as a label in the middle of the flight
@@ -694,54 +716,30 @@ class VFA_ADP:
                 else:
                     # Plot a placeholder for aircraft with no flights assigned
                     plt.plot([self.recovery_start, self.recovery_end], [aircraft_id, aircraft_id], marker='|',
-                             color='gray',
-                             linewidth=2, linestyle=':')
+                             color='gray', linewidth=2, linestyle=':')
                     plt.text(self.recovery_start, aircraft_id, 'No Flights',
                              verticalalignment='bottom', horizontalalignment='left', fontsize=8, color='gray')
 
-                # Plot disruptions
-                for disruption in self.disruptions:
-                    if disruption["Type"] == 'AU' and aircraft_id == disruption["Aircraft"]:
-                        start_time = disruption['StartTime']
-                        end_time = disruption['EndTime']
-                        plt.plot([start_time, end_time], [disruption['Aircraft'], disruption['Aircraft']],
-                                 linestyle='--',
-                                 color='orange', linewidth=2)  # Dashed orange line for disruption
-                        plt.scatter([start_time, end_time], [disruption['Aircraft'], disruption['Aircraft']],
-                                    color='orange',
-                                    marker='x', s=100)  # Markers for disruption start and end
-
-                    elif disruption["Type"] == 'Delay':
-                        disrupted_flight_nr = disruption['Flightnr']
-                        delay_minutes = int(disruption['Delay'])
-                        flight = self.get_flight(disrupted_flight_nr, state)
-                        aircraft_delayed = None
-                        for aircraft in self.aircraft_ids:
-                            ac_state = state[aircraft]  # This should match the current aircraft in the loop
-                            if any(flight['Flightnr'] == disrupted_flight_nr for flight in ac_state['flights']):
-                                aircraft_delayed = aircraft
-                                break
-
-                        if aircraft_id == aircraft_delayed:
-                            ADT = flight['ADT']
-                            AAT = flight['AAT']
-                            if ADT and AAT:
-                                plt.plot([ADT - pd.Timedelta(minutes=delay_minutes), ADT], [aircraft_id, aircraft_id],
-                                         linestyle='--',
-                                         color='red', linewidth=2)  # Dashed red line for Delay disruption
-                                plt.scatter([ADT - pd.Timedelta(minutes=delay_minutes), ADT],
-                                            [aircraft_id, aircraft_id], color='red',
-                                            marker='x', s=100)  # Markers for Delay disruption start and end
+                # Plot Aircraft Unavailability (AU) from the state
+                if 'UA' in aircraft_state and aircraft_state['UA']:
+                    for unavailability in aircraft_state['UA']:
+                        start_time, end_time = unavailability
+                        label = 'Unavailability' if not au_label_added else ""
+                        plt.plot([start_time, end_time], [aircraft_id, aircraft_id],
+                                 linestyle='--', color='orange', linewidth=2, label=label)
+                        plt.scatter([start_time, end_time], [aircraft_id, aircraft_id],
+                                    color='orange', marker='x', s=100)  # Markers for AU disruption start and end
+                        au_label_added = True  # Only add the label once for 'AU'
 
         # Retrieve the current time associated with the step
         current_time = self.periods[step] if step < len(self.periods) else self.recovery_end
 
-        # Plot the current time as a vertical line
-        plt.axvline(x=current_time, color='black', linestyle='-', linewidth=2, label='Current Time')
+        # Plot the current time as a vertical line (only once)
+        plt.axvline(x=current_time, color='black', linestyle='-', linewidth=1, label='Current Time')
 
-        # Plot recovery_start and recovery_end as vertical lines
-        plt.axvline(x=self.recovery_start, color='purple', linestyle='--', linewidth=2, label='Recovery Start')
-        plt.axvline(x=self.recovery_end, color='purple', linestyle='--', linewidth=2, label='Recovery End')
+        # Plot recovery_start and recovery_end as vertical lines (only once)
+        plt.axvline(x=self.recovery_start, color='purple', linestyle='--', linewidth=1, label='Recovery Start')
+        plt.axvline(x=self.recovery_end, color='purple', linestyle='--', linewidth=1, label='Recovery End')
 
         plt.xlabel('Time')
         plt.ylabel('Aircraft')
@@ -772,6 +770,7 @@ if __name__ == '__main__':
     folder = 'A01_small2'
     folder = 'A01_mini'
     # folder = 'A01_example'
+    folder = 'A01_example_greedy'
     folder = 'A01_example_greedy2'
 
     aircraft_data, flight_data, rotations_data, disruptions, recovery_start, recovery_end = read_data(folder)
@@ -788,5 +787,6 @@ if __name__ == '__main__':
     # state2 = {'t': 0, 'B767#3': {'conflicts': [], 'UA': [], 'flights': [{'Flightnr': '12', 'ADT': pd.Timestamp('2008-01-10 13:30:00'), 'AAT': pd.Timestamp('2008-01-10 14:30:00')}, {'Flightnr': '2', 'ADT': pd.Timestamp('2008-01-10 08:30:00'), 'AAT': pd.Timestamp('2008-01-10 10:00:00')}]}, 'A320#1': {'conflicts': [], 'UA': [(pd.Timestamp('2008-01-10 06:00:00'), pd.Timestamp('2008-01-10 12:00:00'))], 'flights': []}, 'A320#2': {'conflicts': [{'Flightnr': '10', 'ADT': pd.Timestamp('2008-01-10 09:00:00'), 'AAT': pd.Timestamp('2008-01-10 12:00:00')}], 'UA': [(pd.Timestamp('2008-01-10 06:00:00'), pd.Timestamp('2008-01-10 12:00:00'))], 'flights': [{'Flightnr': '10', 'ADT': pd.Timestamp('2008-01-10 09:00:00'), 'AAT': pd.Timestamp('2008-01-10 12:00:00')}]}, 'B777#4': {'conflicts': [], 'UA': [], 'flights': [{'Flightnr': '1', 'ADT': pd.Timestamp('2008-01-10 11:00:00'), 'AAT': pd.Timestamp('2008-01-10 13:00:00')}]}, 'value': [-4000], 'iteration': [0]}
     # delay = m.check_delays(state1, state2)
     # print(f'delay: {delay}')
+    print(m.states)
     m.solve_with_vfa()
     m.plot_schedule(initial_state, iteration=0)

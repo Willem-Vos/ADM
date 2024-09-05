@@ -4,42 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="6291196f-5dc1-4c5c-b2f5-59a3beac3516" name="Changes" comment="Value Function Approximation added.">
-      <change afterPath="$PROJECT_DIR$/.idea/codeStyles/codeStyleConfig.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ADP_VFA_main.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ADP_VFA_main_single_delays.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ADP_VFA_sequential.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ADP_VFA_single.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy/aircraft.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy/airports.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy/alt_aircraft.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy/alt_airports.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy/alt_flights.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy/config.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy/dist.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy/flights.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy/itineraries.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy/position.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy/rotations.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy2/aircraft.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy2/airports.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy2/alt_aircraft.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy2/alt_airports.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy2/alt_flights.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy2/config.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy2/dist.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy2/flights.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy2/itineraries.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy2/position.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/A01_example_greedy2/rotations.csv" afterDir="false" />
+    <list default="true" id="6291196f-5dc1-4c5c-b2f5-59a3beac3516" name="Changes" comment="Single actions, delays added, different initial values">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ADP_VFA.py" beforeDir="false" afterPath="$PROJECT_DIR$/ADP_VFA.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Data/A01_example/alt_flights.csv" beforeDir="false" afterPath="$PROJECT_DIR$/Data/A01_example/alt_flights.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Data/A01_small2/alt_aircraft.csv" beforeDir="false" afterPath="$PROJECT_DIR$/Data/A01_small2/alt_aircraft.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Data/A01_small2/flights.csv" beforeDir="false" afterPath="$PROJECT_DIR$/Data/A01_small2/flights.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Data/A05_6088570/alt_aircraft.csv" beforeDir="false" afterPath="$PROJECT_DIR$/Data/A05_6088570/alt_aircraft.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/preprocessing.py" beforeDir="false" afterPath="$PROJECT_DIR$/preprocessing.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scratch.py" beforeDir="false" afterPath="$PROJECT_DIR$/scratch.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ADP_VFA_main.py" beforeDir="false" afterPath="$PROJECT_DIR$/ADP_VFA_main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -74,11 +41,8 @@
   }
 }</component>
   <component name="HighlightingSettingsPerFile">
-    <setting file="file://$PROJECT_DIR$/ADP_VFA.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/ADP_VFA_main.py" root0="SKIP_INSPECTION" />
-    <setting file="file://$PROJECT_DIR$/ADP_VFA_main_propagated.py" root0="SKIP_INSPECTION" />
-    <setting file="file://$PROJECT_DIR$/ADP_VFA_sequential.py" root0="SKIP_INSPECTION" />
-    <setting file="file://$PROJECT_DIR$/ADP_VFA_single.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/ADP_VFA_main_single_delays.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/DP.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/environment.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/old/DP_costs.py" root0="SKIP_INSPECTION" />
@@ -124,7 +88,7 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "git-widget-placeholder": "main",
-    "last_opened_file_path": "/Users/willemvos/Thesis/ADM",
+    "last_opened_file_path": "/Users/willemvos/Thesis/ADM/old",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -136,6 +100,7 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/old" />
       <recent name="$PROJECT_DIR$" />
       <recent name="$PROJECT_DIR$/Data" />
       <recent name="$PROJECT_DIR$/Data/A01_small" />
@@ -289,7 +254,7 @@
       <option name="presentableId" value="Default" />
       <updated>1723105977878</updated>
       <workItem from="1723122959068" duration="96687000" />
-      <workItem from="1724067759070" duration="299862000" />
+      <workItem from="1724067759070" duration="306348000" />
     </task>
     <task id="LOCAL-00001" summary="small changes">
       <option name="closed" value="true" />
@@ -347,7 +312,23 @@
       <option name="project" value="LOCAL" />
       <updated>1725273512912</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="Single actions, delays added, different initial values">
+      <option name="closed" value="true" />
+      <created>1725465854712</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1725465854712</updated>
+    </task>
+    <task id="LOCAL-00009" summary="Single actions, delays added, different initial values">
+      <option name="closed" value="true" />
+      <created>1725466003684</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1725466003684</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -371,7 +352,8 @@
     <MESSAGE value="small changes" />
     <MESSAGE value="Dynamic Programming for swaps" />
     <MESSAGE value="Value Function Approximation added." />
-    <option name="LAST_COMMIT_MESSAGE" value="Value Function Approximation added." />
+    <MESSAGE value="Single actions, delays added, different initial values" />
+    <option name="LAST_COMMIT_MESSAGE" value="Single actions, delays added, different initial values" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -405,7 +387,7 @@
     <SUITE FILE_PATH="coverage/ADM$ADP_VFA_alt_rewards.coverage" NAME="ADP_VFA Coverage Results" MODIFIED="1724928815621" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$preprocessing.coverage" NAME="preprocessing Coverage Results" MODIFIED="1725284558437" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$environment2.coverage" NAME="dynamic_program Coverage Results" MODIFIED="1724436811477" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/ADM$ADP_VFA_single_conflicts.coverage" NAME="ADP_VFA_main Coverage Results" MODIFIED="1725465527307" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ADM$ADP_VFA_single_conflicts.coverage" NAME="ADP_VFA_main Coverage Results" MODIFIED="1725531053637" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$Environment.coverage" NAME="Environment Coverage Results" MODIFIED="1723123241323" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$DP_table_nostep.coverage" NAME="DP Coverage Results" MODIFIED="1725266410322" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
