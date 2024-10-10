@@ -1,12 +1,5 @@
-import gym
-from gym import spaces
-import numpy as np
-import pandas as pd
-import random
-import copy
 from itertools import product
-from preprocessing import *
-from environment import *
+from old.environment import *
 
 class DisruptionRealization:
     def __init__(self, aircraft_data, flight_data, disruptions, recovery_start, recovery_end):
@@ -529,7 +522,7 @@ class DisruptionRealization:
             # Centralized action evaluation
             all_possible_actions = self.get_all_possible_actions(step)  # Get all possible actions for all aircraft
 
-            # Capture the full state set for this timestep
+            # Capture the full state set for this t
             state_set = tuple(self.get_state_key(aircraft['ID'], step) for aircraft in self.aircraft_data)
 
             for action_set in all_possible_actions:
@@ -609,7 +602,7 @@ class DisruptionRealization:
 
         # Loop through each step
         for step in range(len(self.steps)):
-            # Capture the full state set for this timestep
+            # Capture the full state set for this t
             state_set = tuple(self.get_state_key(aircraft['ID'], step) for aircraft in self.aircraft_data)
 
             # Retrieve the best action set for the current state set

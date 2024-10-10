@@ -48,7 +48,6 @@ def read_data(folder):
         att = lines[0].split()
         recovery_start_str = str(att[0] + ' ' + att[1])
         recovery_end_str = str(att[2] + ' ' + att[3])
-        print(recovery_start_str, recovery_end_str)
         recovery_start = parse_time_string(recovery_start_str)
         recovery_end = parse_time_string(recovery_end_str)
 
@@ -120,7 +119,8 @@ def read_data(folder):
         lines = file.readlines()
         att = []
         if lines == ['#']:
-            print('No aircraft disruptions')
+            # print('No aircraft disruptions')
+            pass
         else:
             for line in lines[:-1]:  # dont include the last line of each file that contains an "#"
                 att = list(line.split())  # split lines into attributes of aircraft.
@@ -133,41 +133,41 @@ def read_data(folder):
                 disruptions.append(aircraft_disruption)
 
 
-    # Flight Disruptions:
-    with open(f'Data/{folder}/alt_flights.csv', 'r') as file:
-        # %Flight DepDate Delay
-        lines = file.readlines()
-        att = []
-        if lines == ['#']:
-            print('No delays')
-        else:
-            for line in lines[:-1]:  # dont include the last line of each file that contains an "#"
-                att = list(line.split())  # split lines into attributes of aircraft.
-                flight_disruption = {
-                    "Type": "Delay",
-                    "Flightnr": att[0],  # flight number
-                    "DepDate": att[1],  # Departure Date
-                    "Delay": att[2]  # Delay in minutes,
-                }
-                disruptions.append(flight_disruption)
+    # # Flight Disruptions:
+    # with open(f'Data/{folder}/alt_flights.csv', 'r') as file:
+    #     # %Flight DepDate Delay
+    #     lines = file.readlines()
+    #     att = []
+    #     if lines == ['#']:
+    #         print('No delays')
+    #     else:
+    #         for line in lines[:-1]:  # dont include the last line of each file that contains an "#"
+    #             att = list(line.split())  # split lines into attributes of aircraft.
+    #             flight_disruption = {
+    #                 "Type": "Delay",
+    #                 "Flightnr": att[0],  # flight number
+    #                 "DepDate": att[1],  # Departure Date
+    #                 "Delay": att[2]  # Delay in minutes,
+    #             }
+    #             disruptions.append(flight_disruption)
 
-    # Airport Disruptions:
-    with open(f'Data/{folder}/alt_airports.csv', 'r') as file:
-        # %Airport StartDate StartTime EndDate EndTime Dep/h Arr/h
-        lines = file.readlines()
-        att = []
-        if lines == ['#']:
-            print('No airport disruptions')
-        else:
-            for line in lines[:-1]:  # dont include the last line of each file that contains an "#"
-                att = list(line.split())  # split lines into attributes of aircraft.
-                airport_disruption = {
-                    "Type": "AC",  # Airport Closure
-                    "Airport": att[0],  # Airport
-                    "StartTime": att[1] + ' ' + att[2], # Timestamp for start of disruption
-                    "EndTime": att[3] + ' ' + att[4]  # Timesstamp for end of disruption
-                }
-                disruptions.append(airport_disruption)
+    # # Airport Disruptions:
+    # with open(f'Data/{folder}/alt_airports.csv', 'r') as file:
+    #     # %Airport StartDate StartTime EndDate EndTime Dep/h Arr/h
+    #     lines = file.readlines()
+    #     att = []
+    #     if lines == ['#']:
+    #         print('No airport disruptions')
+    #     else:
+    #         for line in lines[:-1]:  # dont include the last line of each file that contains an "#"
+    #             att = list(line.split())  # split lines into attributes of aircraft.
+    #             airport_disruption = {
+    #                 "Type": "AC",  # Airport Closure
+    #                 "Airport": att[0],  # Airport
+    #                 "StartTime": att[1] + ' ' + att[2], # Timestamp for start of disruption
+    #                 "EndTime": att[3] + ' ' + att[4]  # Timesstamp for end of disruption
+    #             }
+    #             disruptions.append(airport_disruption)
     r = []
     for rotation in rotations_data:
         if rotation['Flightnr'] not in r:
@@ -219,15 +219,13 @@ def read_data(folder):
         if disruption['Type'] != "Delay":
             disruption["StartTime"], disruption["EndTime"] = parse_time_string(
                 disruption["StartTime"]), parse_time_string(disruption["EndTime"])
-        elif disruption['Type'] == "AC":
-            pass
 
 
     # Remove aircraft from data that are not used in the original schedule:
-    aircraft_data = [
-        aircraft for aircraft in aircraft_data
-        if any(flight_nr in [flight['Flightnr'] for flight in flight_data] for flight_nr in aircraft['AssignedFlights'])
-    ]
+    # aircraft_data = [
+    #     aircraft for aircraft in aircraft_data
+    #     if any(flight_nr in [flight['Flightnr'] for flight in flight_data] for flight_nr in aircraft['AssignedFlights'])
+    # ]
 
     # Remove assigned_flights from aircraft if they are not in the flight schedule
     for aircraft in aircraft_data:
@@ -237,8 +235,8 @@ def read_data(folder):
         ]
 
     aircraft_data, flight_data = update_data_post_disruptions(aircraft_data, flight_data, disruptions)
-    print(f'--> {len(aircraft_data)} Aircraft')
-    print(f'--> {len(flight_data)} Flights')
+    # print(f'--> {len(aircraft_data)} Aircraft')
+    # print(f'--> {len(flight_data)} Flights')
 
 
     return aircraft_data, flight_data, rotations_data, disruptions, recovery_start, recovery_end
@@ -422,41 +420,44 @@ def flight_index(flight_data, flight_nr):
 
 
 if __name__ == "__main__":
-    # Read intial data:
-    aircraft_data, flight_data, rotations_data, disruptions, recovery_start, recovery_end = read_data(folder)
-    print(disruptions)
-    print(aircraft_data)
-    print(flight_data)
-    # Plot initial data:
-    plot_schedule(aircraft_data, flight_data, disruptions, iteration='before update')
-    # plot_time_space(flight_data)
+    for _ in range(1, 11):
+        folder = f"TRAIN{_}"
 
-    # Update schedule following disruptions :
-    aircraft_data, flight_data = update_data_post_disruptions(aircraft_data, flight_data, disruptions)
-    plot_schedule(aircraft_data, flight_data, disruptions, iteration='after update')
+        # Read intial data:
+        aircraft_data, flight_data, rotations_data, disruptions, recovery_start, recovery_end = read_data(folder)
+        print(disruptions)
+        print(aircraft_data)
+        print(flight_data)
+        # Plot initial data:
+        plot_schedule(aircraft_data, flight_data, disruptions, iteration='before update')
+        # plot_time_space(flight_data)
 
-    print('\nRECOVERY WINDOW:')
-    print(recovery_start)
-    print(recovery_end)
+        # Update schedule following disruptions :
+        aircraft_data, flight_data = update_data_post_disruptions(aircraft_data, flight_data, disruptions)
+        plot_schedule(aircraft_data, flight_data, disruptions, iteration='after update')
 
-    print('\nAIRCRAFT:')
-    for aircraft in aircraft_data:
-        print(aircraft)
+        print('\nRECOVERY WINDOW:')
+        print(recovery_start)
+        print(recovery_end)
 
-    print('\nFLIGHTS:')
-    for flight in flight_data:
-        print(flight)
-        # print(f'{flight['Flightnr']}: {flight["Orig"]} - {flight["Dest"]} | {flight['SDT']}-{flight['SAT']}')
-        # print(f'{flight['SDT']}')
-        # print(f'{flight['SAT']}')
+        print('\nAIRCRAFT:')
+        for aircraft in aircraft_data:
+            print(aircraft)
 
-    print('\nROTATIONS:')
-    for rotation in rotations_data:
-        print(rotation)
+        print('\nFLIGHTS:')
+        for flight in flight_data:
+            print(flight)
+            # print(f'{flight['Flightnr']}: {flight["Orig"]} - {flight["Dest"]} | {flight['SDT']}-{flight['SAT']}')
+            # print(f'{flight['SDT']}')
+            # print(f'{flight['SAT']}')
 
-    print('\nDISRUPTIONS:')
-    for disruption in disruptions:
-        print(disruption)
+        print('\nROTATIONS:')
+        for rotation in rotations_data:
+            print(rotation)
+
+        print('\nDISRUPTIONS:')
+        for disruption in disruptions:
+            print(disruption)
 
     # print('\n CHECK UPDATES IN DATA:')
     # print('\n AIRCRAFT DATA:')

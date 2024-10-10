@@ -1,6 +1,6 @@
 from itertools import product
-from environment import *
-import random
+from old.environment import *
+
 
 # TODO:
 # Integrated decisions at every t or sequential actions for each ac? >> Runtime and big action space
@@ -545,7 +545,7 @@ class VFA_ADP:
 
         next_state_key = self.create_hashable_state_key(next_state)
         if not next_state_key in self.states:
-            # if it is a newly expored state: calculated the intial value as function of timestep
+            # if it is a newly expored state: calculated the intial value as function of t
             # downstream rewards gets closer to zero when less time on horizon
             next_state['value'] = [self.initial_value * (self.T - next_state['t'])  / self.T]
             next_state['iteration'] = [n]
