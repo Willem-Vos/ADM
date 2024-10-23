@@ -180,4 +180,3 @@ if __name__ == '__main__':
     end = 18
     generate_flight_data(num_aircraft, num_flights, start, end, output_folder="/Users/willemvos/Thesis/ADM/Data")
 
-

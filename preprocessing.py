@@ -220,7 +220,6 @@ def read_data(folder):
             disruption["StartTime"], disruption["EndTime"] = parse_time_string(
                 disruption["StartTime"]), parse_time_string(disruption["EndTime"])
 
-
     # Remove aircraft from data that are not used in the original schedule:
     # aircraft_data = [
     #     aircraft for aircraft in aircraft_data

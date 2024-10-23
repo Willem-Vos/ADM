@@ -33,6 +33,7 @@ class VFA_ADP:
         self.recovery_start = recovery_start
         self.recovery_end = recovery_end
 
+
         self.interval = 60 # minutes
         self.intervals = pd.date_range(start=recovery_start, end=recovery_end, freq= str(self.interval)+'T')
         self.periods = {i: start for i, start in enumerate(self.intervals)}
