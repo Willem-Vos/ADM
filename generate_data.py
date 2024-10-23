@@ -175,9 +175,9 @@ def generate_alt_aircraft(instance_folder, base_date, aircraft_list, start, end)
 
 if __name__ == '__main__':
     num_aircraft = 4
-    num_flights = 8
+    num_flights = 12
     start = 8
-    end = 16
+    end = 18
     generate_flight_data(num_aircraft, num_flights, start, end, output_folder="/Users/willemvos/Thesis/ADM/Data")
 
 

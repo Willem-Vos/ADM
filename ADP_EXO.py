@@ -1,6 +1,6 @@
 from itertools import product
 from old.environment import *
-from disruptions import *
+from generate_disruptions import *
 import os
 import json
 import random
@@ -8,6 +8,13 @@ import numpy as np
 import time
 from datetime import datetime, timedelta
 import pickle
+from scipy.signal import savgol_filter
+import gurobipy as gp
+from gurobipy import GRB
+
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+# from joblib import Parallel, delayed
 # TODO:
 # >>>>>> Use aggregate states to find best actions during training?
 # DONE - Aggregation value updates stepize dependent on times state is visited
@@ -35,14 +42,19 @@ class VFA_ADP:
         self.cancellation_cost = 240
 
         self.T = self.steps[-1]
-        self.N = 2 # number of iterations
-        self.y = 1 # discount factor
-        # self.a = 10 / self.N # learning rate or stepsize, fixed
-        self.a = 0.2 # learning rate or stepsize, fixed
-        self.p = 0.1
-        self.deterministic = True # False for probabilistically sampled disruptions, True for deterministic disruptions from data
-        self.epsilon = 0.5 # random state transition for exploration probabilty
-
+        self.N = 1000           # Number of iterations per instance
+        self.y = 1              # Discount factor
+        # self.a = 1 / self.N   # learning rate or stepsize, fixed
+        self.α = 0.1            # Learning rate or stepsize, fixed
+        self.harmonic_a = 2.5   # Parameter for calculating harmonic stepsize
+        self.p = 0.15           # Probability of aircraft being unavailable
+        self.ε = 0.0            # Exploration probability
+        self.ε_init = self.ε
+        self.ε_end = 0
+        self.harmonic_stepsize = True
+        self.decaying_ε = False
+        self.deterministic = False # False for probabilistically sampled disruptions, True for deterministic disruptions from data
+        self.plot = True
 
         # States
         self.states = dict()
@@ -50,6 +62,7 @@ class VFA_ADP:
         self.aggregation_level = agg_lvl
         self.initial_state = self.initialize_state()
         self.initial_state_key = self.create_hashable_state_key(self.initial_state)
+
 
 # INITIALIZATION FUNCTIONS:
     def initialize_state(self):
@@ -72,14 +85,15 @@ class VFA_ADP:
             state_dict[aircraft_id] = aircraft_state
 
         initial_value = -self.cancellation_cost * self.num_conflicts(state_dict)
+        # initial_value = -self.cancellation_cost * (len(self.flight_data) / len(self.aircraft_ids))
 
         # set value of the state to initial value and iteration to zero:
-        state_dict['value'] = [initial_value]
-        state_dict['iteration'] = [0]
+        state_dict['value'] = initial_value
+        state_dict['iteration'] = 0
 
         agg_dict['count'] = 0
-        agg_dict['value'] = [initial_value]
-        agg_dict['iteration'] = [0]
+        agg_dict['value'] = initial_value
+        # agg_dict['iteration'] = [0]
 
         state_key = self.create_hashable_state_key(state_dict)
         aggregate_state_key = self.G(state_dict, self.aggregation_level)
@@ -285,7 +299,6 @@ class VFA_ADP:
             return (disruption[0] <= flight['ADT'] <= disruption[1] or
                     flight['ADT'] <= disruption[0] <= flight['AAT'])
 
-
     def conflict_at_step(self, state, aircraft_id, t):
         aircraft_state = state[aircraft_id]
         conflicts = []
@@ -314,35 +327,37 @@ class VFA_ADP:
                 (start >= flight['ADT'] and end <= flight['AAT'])
                 )
 
-    def X_ta(self, current_state, aircraft_id):
+    def X_ta(self, current_state):
         t = current_state['t']
         current_time = self.periods[current_state['t']]
-        aircraft_state = current_state[aircraft_id]
-        actions = [('none', 'none', 'none')]
-        # Iterate over all flights of the current aircraft
-        for flight in aircraft_state['flights']:
-            flight_nr = flight['Flightnr']
-            flight_to_swap = self.get_flight(flight_nr, current_state)  # flight dict
 
-            if flight_to_swap['ADT'] < current_time:
-                continue
+        # Initialize actions with a default 'none' action
+        actions = np.array([('none', 'none', 'none')], dtype=object)
 
-            # Consider swapping this flight to every other aircraft
-            for other_aircraft_id in self.aircraft_ids:
-                # if other_aircraft_id == aircraft_id:
-                #     continue
+        # Iterate over all aircraft
+        for aircraft_id in self.aircraft_ids:
+            aircraft_state = current_state[aircraft_id]
 
-                # 2. Check if the new aircraft can perform the flight
-                # if self.unavailable_for_flight(flight_to_swap, other_aircraft_id, t):  # flight_dict, str
-                #     continue  # Skip this swap if the new aircraft cannot perform the flight
+            # Iterate over all flights of the current aircraft
+            for flight in aircraft_state['flights']:
+                flight_nr = flight['Flightnr']
+                flight_to_swap = self.get_flight(flight_nr, current_state)  # flight dict
 
-                # If all checks pass, add this as a possible action
-                actions += [('swap', flight_nr, other_aircraft_id)]
+                # Only consider flights that have not yet departed
+                if flight_to_swap['ADT'] < current_time:
+                    continue
+
+                # Consider swapping this flight to every other aircraft
+                for other_aircraft_id in self.aircraft_ids:
+                    if self.calculate_utilization(current_state, other_aircraft_id) > 0.75:
+                        continue
+                    # Create the swap action and append it to the actions array
+                    new_action = np.array([('swap', flight_nr, other_aircraft_id)], dtype=object)
+                    actions = np.vstack([actions, new_action])
 
         return actions
 
-
-####################### REWARD LOGIC ########################
+    ####################### REWARD LOGIC ########################
     def check_overlapping_assignments(self, next_state, aircraft_id, changed_flight):
         overlapping_flights = []
 
@@ -355,6 +370,37 @@ class VFA_ADP:
         overlapping_flights = sorted(overlapping_flights, key=lambda flight: flight['ADT'])
 
         return overlapping_flights  # Return sorted overlapping flights
+
+    def calculate_utilization(self, current_state, aircraft_id):
+        t = current_state['t']
+        current_time = self.periods[current_state['t']]
+        aircraft_state = current_state[aircraft_id]
+
+        total_time_in_flight = pd.Timedelta(0)  # Initialize total flight time to zero
+        latest_arrival = self.recovery_start
+
+        # Iterate over all the flights assigned to this aircraft
+        for flight in aircraft_state['flights']:
+            departure_time = flight['ADT']  # Actual Departure Time
+            arrival_time = flight['AAT']  # Actual Arrival Time
+            latest_arrival = arrival_time if arrival_time > latest_arrival else latest_arrival
+            flight_duration = pd.Timedelta(0)
+
+
+            if departure_time > current_time:
+                # Calculate flight duration
+                flight_duration = arrival_time - departure_time
+
+            elif arrival_time > current_time > departure_time:
+                flight_duration = arrival_time - current_time
+
+            total_time_in_flight += flight_duration
+
+        # Calculate utilization ratio
+        total_available_time = latest_arrival - current_time if latest_arrival > current_time else pd.Timedelta(0)
+        utilization = total_time_in_flight / total_available_time if total_available_time > pd.Timedelta(0) else 0
+
+        return utilization
 
     def delay_swapped_flight(self, next_state, aircraft_id, changed_flight, overlapping_flights, apply):
         """
@@ -421,7 +467,6 @@ class VFA_ADP:
                         if flight['Flightnr'] == delayed_flight['Flightnr']:
                             temp_next_state[aircraft_id]['flights'][i] = delayed_flight
 
-
             # Re-check for new conflicts after each delay
             if apply:
                 print(f'Check overlapping assignment for newly changed flight: {delayed_flight}')
@@ -431,13 +476,11 @@ class VFA_ADP:
                 print(f'{[flight for flight in overlapping_flights]}')
             changed_flight = delayed_flight
 
-
-
             # If new conflicts emerge, continue the loop, otherwise break
             if not overlapping_flights or overlapping_flights == []:
                 break
 
-        next_state = temp_next_state
+        # next_state = temp_next_state
         # If no further conflicts, return the updated state and total delay
         return temp_next_state
 
@@ -492,10 +535,10 @@ class VFA_ADP:
             # Check for subsequent flights and delay them as needed
             overlapping_flights = self.check_overlapping_assignments(temp_next_state, aircraft_id, disrupted_flight)
             if overlapping_flights != [] and self.delay_swapped_flight(temp_next_state, aircraft_id, disrupted_flight, overlapping_flights, apply=False) is not None:
-                temp_next_state = copy.deepcopy(self.delay_swapped_flight(temp_next_state, aircraft_id, disrupted_flight, overlapping_flights, apply=False))
+                temp_next_state = self.delay_swapped_flight(temp_next_state, aircraft_id, disrupted_flight, overlapping_flights, apply=False)
 
         # Update the next state with all delayed flights
-        next_state = temp_next_state
+        # next_state = temp_next_state
         return temp_next_state
 
     def check_delays(self, current_state, next_state):
@@ -553,8 +596,14 @@ class VFA_ADP:
 
         # 1. Check how many flights did not get recoverd:
         canx = self.check_canx(pre_decision_state, post_decision_state)
-
         reward -= canx * self.cancellation_cost
+
+        # 2. Check how many conflicts got resolved:
+        # pre_conflicts = sum([len(pre_decision_state[aircraft_id]['conflicts']) for aircraft_id in self.aircraft_ids])
+        # post_conflicts = sum([len(post_decision_state[aircraft_id]['conflicts']) for aircraft_id in self.aircraft_ids])
+        # nr_resolved_conflicts = pre_conflicts - post_conflicts
+
+        # reward += nr_resolved_conflicts * self.cancellation_cost
 
         # Penalties for performing a swap actions
         if action_type == 'swap':
@@ -565,304 +614,225 @@ class VFA_ADP:
             reward -= delay
         return reward
 
+    def parallel_process_action(self, S_t_dict, x, t, n):
+        S_tx_dict = self.simulate_action_to_state(S_t_dict, x, t, n)
+        r_t = self.compute_reward(S_t_dict, S_tx_dict, x)
+        v_downstream = S_tx_dict['value']
+        return tuple(x), r_t, v_downstream, S_tx_dict
+
+################### SOLVE: ##################
+    def solve_with_gurobi(self, S_t_dict, X_ta, t, n):
+        # Initialize the Gurobi model
+        model = gp.Model("ADP_Optimization")
+
+        # Add decision variables for each action in X_ta
+        action_vars = model.addVars(len(X_ta), vtype=GRB.BINARY, name="actions")
+
+        # Objective function: maximize the expected value
+        V_x = {}
+        R_t = {}
+        for i, x in enumerate(X_ta):
+            S_tx_dict = self.simulate_action_to_state(S_t_dict, x, t, n)
+            r_t = self.compute_reward(S_t_dict, S_tx_dict, x)
+            v_downstream = S_tx_dict['value']
+            V_x[i] = r_t + self.y * v_downstream
+            R_t[tuple(x)] = r_t
+
+        # Set the objective to maximize the sum of expected rewards for chosen actions
+        model.setObjective(gp.quicksum(V_x[i] * action_vars[i] for i in range(len(X_ta))), GRB.MAXIMIZE)
+
+        # Add any necessary constraints (e.g., constraints on actions)
+        # For example: if only one action can be chosen at a time
+        model.addConstr(gp.quicksum(action_vars[i] for i in range(len(X_ta))) == 1, "action_constraint")
+
+        # Optimize the model
+        model.optimize()
+
+        # Extract the best action: find the action with a solution value of 1
+        best_action_idx = None
+        for i in range(len(X_ta)):
+            if action_vars[i].x > 0.02:  # Gurobi returns solution values as floats (0.0 or 1.0)
+                best_action_idx = i
+                break
+
+        if best_action_idx is not None:
+            x_hat = X_ta[best_action_idx]
+            v_hat = V_x[best_action_idx]
+            return x_hat, v_hat, R_t
+        else:
+            raise ValueError("No valid action found")
 
 
-
-################### SOLVE: ###################
     def train_with_vfa(self):
         objective_function_values = {}
         value_function_values = {}
         self.policy = {}
         agg_states_count = 1
 
+        disruptions = load_disruptions("Disruptions")      # get pre sampled disruptions from storage
+        count = 0
         # iterations/episodes
         for n in range(1, int(self.N) + 1):
-            print(f'\n----> n = {n}')
+            # print(f'{n= }')
             next_state = self.states[self.initial_state_key]
-            self.disruptions = (
-                sample_disruption_path(self.aircraft_ids, self.steps, self.periods, self.p)
-                if self.deterministic == False
-                else self.deterministic_disruptions(n)
-            )
+            self.disruptions = disruptions[n]                   # take n'th realization from storage
+            f = (self.N - n) / self.N
+            ε = (self.ε_init - self.ε_end)*f + self.ε_end       # Decaying ε
+            initial_expected_value = next_state['value']
 
-            initial_expected_value = next_state['value'][-1]
+            count += count_disruptions(self.disruptions)
             accumulated_rewards = []
-
             for t in self.steps[:-1]:
-                print(f'>>>>>>>>>>>>>>>>>>>>>> {t = }')
+                V_x = {}
+                R_t = {}
+                V_downstream = {}
                 if n == self.N:
                     self.plot_schedule(next_state, n, folder)
 
-                # Work directly with the state from self.states
-                S_t_dict = copy.deepcopy(next_state)  # Use deepcopy to avoid reference issues
+                S_t_dict = next_state  # Pre-decsision state
                 S_t = self.create_hashable_state_key(S_t_dict)
+                S_tx_prev_dict = self.states[S_tx] if t > 0 else self.states[S_t]  # Carry the post-decision state forward from previous timestep (It gets updated at this step timestep)
+                S_tx_prev = S_tx if t > 0 else S_t
 
-                action_values = {}
-                immediate_rewards = {}
-                downstream_values = {}
+                S_tx_g_prev = self.G(S_tx_prev_dict, self.aggregation_level)
+                if self.agg_states[S_tx_g_prev]:
+                    S_tx_g_prev_dict = self.agg_states[S_tx_g_prev]
+                else:
+                    S_tx_g_prev_dict = {
+                        'count': 1,
+                        'value': S_tx_prev_dict['value']
+                        # 'iteration': [n],
+                    }
+                    self.agg_states[S_tx_g_prev] = S_tx_g_prev_dict
 
-                for aircraft_id in self.aircraft_ids:
-                    X_ta = self.X_ta(S_t_dict, aircraft_id)  # Action set
-
-                    # calculate immediate rewards for each action set at time t and store in action_values
-                    for x in X_ta:
-                        # get next states for all possible actions
-                        S_tx_dict = self.simulate_action_to_state(S_t_dict, x, t, n)
-                        S_tx = self.create_hashable_state_key(S_tx_dict)
-                        R_t = self.compute_reward(S_t_dict, S_tx_dict, x)
-                        V_downstream = S_tx_dict['value'][-1]
-
-                        action_values[x] = R_t + self.y * V_downstream
-                        downstream_values[x] = V_downstream
-                        immediate_rewards[x] = R_t
-
+# CALCULATE STATES AND VALUES:
+                X_ta = self.X_ta(S_t_dict) # Action set np array
+                # print(f'{len(X_ta)} Possible actions')
+                # x_hat, v_hat, R_t = self.solve_with_gurobi(S_t_dict, X_ta, t, n)
+                with ThreadPoolExecutor() as executor:
+                    futures = [executor.submit(self.parallel_process_action, S_t_dict, x, t, n) for x in X_ta]
+                    for future in as_completed(futures):
+                        x, r_t, v_downstream, S_tx_dict = future.result()
+                        V_x[x] = r_t + self.y * v_downstream
+                        V_downstream[x] = v_downstream
+                        R_t[x] = r_t
+#
+#                 # for x in X_ta:
+#                 #     # get next states for all possible actions
+#                 #     S_tx_dict = self.simulate_action_to_state(S_t_dict, x, t, n)
+#                 #     r_t = self.compute_reward(S_t_dict, S_tx_dict, x)
+#                 #     v_downstream = S_tx_dict['value'][-1]
+#                 #     x = tuple(x)
+#                 #     V_x[x] = r_t + self.y * v_downstream
+#                 #     V_downstream[x] = v_downstream
+#                 #     R_t[x] = r_t
+#
                 # Choose the best action
-                x_star = max(action_values, key=action_values.get)
+                x_hat = max(V_x, key=V_x.get)
+                v_hat = V_x[x_hat]
+                self.policy[S_t] = x_hat
 
-                self.policy[S_t] = x_star
-                v_star = action_values[x_star]
-                best_immediate_reward = immediate_rewards[x_star]
-                accumulated_rewards.append(best_immediate_reward)
+                # print(f' {t = }')
+                # print(f'\tBEST ACTION           >>>> {x_hat = }:')
+                # # print(f'\tBEST IMMEDIATE REWARD >>>> {rewards[index] = }:')
+                # print(f'\tDOWNSTREAM REWARD     >>>> {downstream_vals[index] = }:')
+                # print(f'\tBEST ACTION VALUE     >>>> {v_hat = }')
 
-                if t in [0, 1, 2]:
-                    print(f' {t = }')
-                    print(f'\tBEST ACTION >>>> {x_star = }:')
-                    print(f'\tBEST IMMEDIATE REWARD >>>> {best_immediate_reward = }:')
-                    print(f'\tDOWNSTREAM REWARD >>>> {downstream_values[x_star] = }:')
-                    print(f'\tBEST ACTION VALUE >>>> {v_star = }')
+# UPDATE VALUES:
+    # Update the value of the pre-decision state
+                v_n_prev = self.states[S_tx_prev]['value'] # Value of previous timestep post-decision state at previous iteration
+    # Value Updates:
+                if self.harmonic_stepsize:
+                    # N = len(self.states[S_tx_prev]['value'])
+                    N = self.states[S_tx_prev]['iteration']
+                    α =  self.harmonic_a / (self.harmonic_a + N)
+                    v_n_new = (1 - α) * v_n_prev + α * v_hat  # Value of previous timestep post-decision state at this timestep
+                    # print(f'{v_n_prev = }')
+                    # print(f'v_n_new = (1 - {α})*{v_n_prev} + {α}*{v_hat} = {v_n_new}\n')
+                else:
+                    v_n_new = (1 - self.α) * v_n_prev + self.α * v_hat # Value of previous timestep post-decision state at this timestep
+                    # print(f'{v_n_prev = }')
+                    # print(f'v_n_new = (1 - {self.α})*{v_n_prev} + {self.α}*{v_hat} = {v_n_new}\n ')
 
-                # Apply the action and get the post-decision state
-                S_tx_dict = self.apply_action_to_state(S_t_dict, x_star, t, n)
-                S_tx = self.create_hashable_state_key(S_tx_dict)
+                # print(f'S_tx_t-1 values before update:')
+                # print(f'{self.states[S_tx_prev]["value"][-5:]}')
+                # self.print_state(self.states[S_tx_prev])
 
+    # Update value to the post-decision state directly in self.states
+                self.states[S_tx_prev]['value'] = v_n_new
+                self.states[S_tx_prev]['iteration'] += 1
 
-                # Aggregation of states
-                S_tx_g = self.G(S_tx_dict, self.aggregation_level)
+                # print(f'S_tx_t-1 values after update:')
+                # print(f'{self.states[S_tx_prev]["value"][-5:]}')
+                # self.print_state(self.states[S_tx_prev])
 
                 # Update values of aggregated state
+                a = self.agg_states[S_tx_g_prev]['count'] / agg_states_count
+                v_g = self.agg_states[S_tx_g_prev]['value']
+                v_0 = S_tx_prev_dict['value']
+                v_smoothed = (1 - a) * v_g + a * v_0
+
+                self.agg_states[S_tx_g_prev]['value'] = v_smoothed
+                self.agg_states[S_tx_g_prev]['count'] += 1
+                # self.agg_states[S_tx_g_prev]['iteration'].extend([n])
+                agg_states_count += 1
+# TRANSITION:
+    # Select greedy move (if ε > 0)
+                x_ε = random.choice(X_ta)
+                x_hat = tuple((random.choices(population=[x_hat, x_ε], weights=[1 - ε, ε])[0] if self.decaying_ε
+                        else random.choices(population=[x_hat, x_ε], weights=[1 - self.ε, self.ε])[0]))
+
+                best_immediate_reward = R_t[x_hat]
+                accumulated_rewards.append(best_immediate_reward)
+
+    # Apply the action and get the post-decision state
+                S_tx_dict = self.apply_action_to_state(S_t_dict, x_hat, t, n)
+                S_tx = self.create_hashable_state_key(S_tx_dict)
+                # print(f'S_tx value:')
+                # print(f'{self.states[S_tx]["value"][-5:]}\n')
+                # self.print_state(self.states[S_tx])
+
+    # Aggregation of states
+                S_tx_g = self.G(S_tx_dict, self.aggregation_level)
+
+    # Update values of aggregated state
                 if S_tx_g not in self.agg_states:
                     self.agg_states[S_tx_g] = {
                         'count': 1,
-                        'value': [S_tx_dict['value'][-1]],
-                        'iteration': [n],
+                        'value': S_tx_dict['value']
+                        # 'iteration': [n],
                     }
                 else:
-                    a = self.agg_states[S_tx_g]['count'] / agg_states_count
-                    v_g = self.agg_states[S_tx_g]['value'][-1]
-                    v_0 = S_tx_dict['value'][-1]
-                    v_smoothed = (1 - a) * v_g + a * v_0
+                    S_tx_g_dict = self.agg_states[S_tx_g]
 
-                    self.agg_states[S_tx_g]['value'].append(v_smoothed)
-                    self.agg_states[S_tx_g]['count'] += 1
-                    self.agg_states[S_tx_g]['iteration'].append(n)
-                agg_states_count += 1
-
-                print(f'S_t values before update:')
-                print(f'{self.states[S_t]["value"][-5:]}')
-                self.print_state(self.states[S_t])
-
-                # Update the value of the pre-decision state
-                v_n_prev = self.states[S_t]['value'][-1]
-                print(f'{v_n_prev = }')
-                v_n_new = (1 - self.a) * v_n_prev + self.a * v_star
-                print(f'v_n_new = (1 - 0.2)*{v_n_prev} + 0.2*{v_star} = {v_n_new}\n ')
-
-                # UPDATE value to the pre-decision state directly in self.states
-                self.states[S_t]['value'].append(v_n_new)
-                self.states[S_t]['iteration'].append(n)
-
-                print(f'S_t values after update:')
-                print(f'{self.states[S_t]["value"][-5:]}')
-                self.print_state(self.states[S_t])
-
-                # Add the post-decision state to states
-                self.states[S_tx] = copy.deepcopy(S_tx_dict)  # Ensure deep copy
-                print(f'S_tx values:')
-                print(f'{self.states[S_tx]["value"][-5:]}\n')
-                self.print_state(self.states[S_tx])
-
-                # Add exogeneous information to post-decision state to get the next pre-decision state
-                S_t_next_dict = copy.deepcopy(self.add_exogeneous_info(S_tx, n))
-                S_t_next = self.create_hashable_state_key(S_t_next_dict)
-
-                self.states[S_t_next] = copy.deepcopy(S_t_next_dict)  # Ensure deep copy
-                print(f'S(S_tx, W_t) values:')
-                print(f'{self.states[S_t_next]["value"][-5:]}\n')
-                self.print_state(self.states[S_t_next])
-
-                next_state = self.states[S_t_next]  # Set the next state for the next time step
-
-            objective_value = sum(accumulated_rewards)
+    # Add exogeneous information to post-decision state to get the next pre-decision state
+                S_t_next_dict, S_t_next = self.add_exogeneous_info(S_tx, n)
+                self.states[S_t_next] = S_t_next_dict
+                # print(f'S(S_tx, W_t) values:')
+                # print(f'{self.states[S_t_next]["value"][-5:]}\n')
+                # self.print_state(self.states[S_t_next])
+                next_state = self.states[S_t_next]
 
             # Store the objective value for this iteration
-            objective_function_values[n] = objective_value
-            value_function_values[n] = initial_expected_value
-
-        # Plot the results
-        self.plot_values(value_function_values, metric="Expected value of initial state")
-        self.plot_values(objective_function_values, metric='Objective value')
-        print(f'\tAverage Objective Value: {np.mean(list(objective_function_values.values()))}')
-
-
-# ALTERNATVIVE POST DECISION STATE METHOD:
-    def train_with_vfa(self):
-        objective_function_values = {}
-        value_function_values = {}
-        self.policy = {}
-        agg_states_count = 1
-
-        # iterations/episodes
-        for n in range(1, int(self.N) + 1):
-            print(f'\n----> n = {n}')
-            next_state = self.states[self.initial_state_key]
-            self.disruptions = (
-                sample_disruption_path(self.aircraft_ids, self.steps, self.periods, self.p)
-                if self.deterministic == False
-                else self.deterministic_disruptions(n)
-            )
-
-            initial_expected_value = next_state['value'][-1]
-            accumulated_rewards = []
-
-            for t in self.steps[:-1]:
-                print(f'>>>>>>>>>>>>>>>>>>>>>> {t = }')
-                if n == self.N:
-                    self.plot_schedule(next_state, n, folder)
-
-                # Work directly with the state from self.states
-                S_t_dict = copy.deepcopy(next_state)  # Use deepcopy to avoid reference issues
-                S_t = self.create_hashable_state_key(S_t_dict)
-
-                action_values = {}
-                immediate_rewards = {}
-                downstream_values = {}
-
-                for aircraft_id in self.aircraft_ids:
-                    X_ta = self.X_ta(S_t_dict, aircraft_id)  # Action set
-
-                    # calculate immediate rewards for each action set at time t and store in action_values
-                    for x in X_ta:
-                        # get next states for all possible actions
-                        S_tx_dict = self.simulate_action_to_state(S_t_dict, x, t, n)
-                        S_tx = self.create_hashable_state_key(S_tx_dict)
-                        R_t = self.compute_reward(S_t_dict, S_tx_dict, x)
-                        V_downstream = S_tx_dict['value'][-1]
-
-                        action_values[x] = R_t + self.y * V_downstream
-                        downstream_values[x] = V_downstream
-                        immediate_rewards[x] = R_t
-
-                # Choose the best action
-                x_star = max(action_values, key=action_values.get)
-
-                self.policy[S_t] = x_star
-                v_star = action_values[x_star]
-                best_immediate_reward = immediate_rewards[x_star]
-                accumulated_rewards.append(best_immediate_reward)
-
-                if t in [0, 1, 2]:
-                    print(f' {t = }')
-                    print(f'\tBEST ACTION >>>> {x_star = }:')
-                    print(f'\tBEST IMMEDIATE REWARD >>>> {best_immediate_reward = }:')
-                    print(f'\tDOWNSTREAM REWARD >>>> {downstream_values[x_star] = }:')
-                    print(f'\tBEST ACTION VALUE >>>> {v_star = }')
-
-                # Apply the action and get the post-decision state
-                S_tx_dict = self.apply_action_to_state(S_t_dict, x_star, t, n)
-                S_tx = self.create_hashable_state_key(S_tx_dict)
-
-
-                # Aggregation of states
-                S_tx_g = self.G(S_tx_dict, self.aggregation_level)
-
-                # Update values of aggregated state
-                if S_tx_g not in self.agg_states:
-                    self.agg_states[S_tx_g] = {
-                        'count': 1,
-                        'value': [S_tx_dict['value'][-1]],
-                        'iteration': [n],
-                    }
-                else:
-                    a = self.agg_states[S_tx_g]['count'] / agg_states_count
-                    v_g = self.agg_states[S_tx_g]['value'][-1]
-                    v_0 = S_tx_dict['value'][-1]
-                    v_smoothed = (1 - a) * v_g + a * v_0
-
-                    self.agg_states[S_tx_g]['value'].append(v_smoothed)
-                    self.agg_states[S_tx_g]['count'] += 1
-                    self.agg_states[S_tx_g]['iteration'].append(n)
-                agg_states_count += 1
-
-                print(f'S_t values before update:')
-                print(f'{self.states[S_t]["value"][-5:]}')
-                self.print_state(self.states[S_t])
-
-                # Update the value of the pre-decision state
-                v_n_prev = self.states[S_t]['value'][-1]
-                v_n_new = (1 - self.a) * v_n_prev + self.a * v_star
-############################### UITWERKEN::::: ######################################
-############################### UITWERKEN::::: ######################################
-############################### UITWERKEN::::: ######################################
-############################### UITWERKEN::::: ######################################
-############################### UITWERKEN::::: ######################################
-############################### UITWERKEN::::: ######################################
-############################### UITWERKEN::::: ######################################
-                v_nx_prev_new = 0
-                v_nx_prev_old = 0
-
-                # Alternative:
-                v_nx_prev_new = (1 - self.a) * v_nx_prev_old + self.a * v_star
-############################### UITWERKEN::::: ######################################
-############################### UITWERKEN::::: ######################################
-############################### UITWERKEN::::: ######################################
-############################### UITWERKEN::::: ######################################
-############################### UITWERKEN::::: ######################################
-############################### UITWERKEN::::: ######################################
-
-                print(f'{v_n_prev = }')
-                print(f'v_n_new = (1 - 0.2)*{v_n_prev} + 0.2*{v_star} = {v_n_new}\n ')
-
-                # UPDATE value to the pre-decision state directly in self.states
-                self.states[S_t]['value'].append(v_n_new)
-                self.states[S_t]['iteration'].append(n)
-
-                print(f'S_t values after update:')
-                print(f'{self.states[S_t]["value"][-5:]}')
-                self.print_state(self.states[S_t])
-
-                # Add the post-decision state to states
-                self.states[S_tx] = copy.deepcopy(S_tx_dict)  # Ensure deep copy
-                print(f'S_tx values:')
-                print(f'{self.states[S_tx]["value"][-5:]}\n')
-                self.print_state(self.states[S_tx])
-
-                # Add exogeneous information to post-decision state to get the next pre-decision state
-                S_t_next_dict = copy.deepcopy(self.add_exogeneous_info(S_tx, n))
-                S_t_next = self.create_hashable_state_key(S_t_next_dict)
-
-                self.states[S_t_next] = copy.deepcopy(S_t_next_dict)  # Ensure deep copy
-                print(f'S(S_tx, W_t) values:')
-                print(f'{self.states[S_t_next]["value"][-5:]}\n')
-                self.print_state(self.states[S_t_next])
-
-                next_state = self.states[S_t_next]  # Set the next state for the next time step
-
             objective_value = sum(accumulated_rewards)
-
-            # Store the objective value for this iteration
             objective_function_values[n] = objective_value
             value_function_values[n] = initial_expected_value
+            # print(f'Z({n}) = {objective_value}')
+            # print(f'Rewards: {accumulated_rewards}')
+            # print(f'E[V0_{n}]= {initial_expected_value}')
 
         # Plot the results
-        self.plot_values(value_function_values, metric="Expected value of initial state")
-        self.plot_values(objective_function_values, metric='Objective value')
-        print(f'\tAverage Objective Value: {np.mean(list(objective_function_values.values()))}')
+        print(f'No disruptions occurred in {100*count/ self.N}% of the iterations')
+        self.avg_obj = np.mean(list(objective_function_values.values()))
+        if self.plot:
+            self.plot_values(value_function_values, metric="E[V0_n]")
+            # self.plot_values(objective_function_values, metric='Objective value')
+        print(f'Average Objective Value: {self.avg_obj}')
 
     def simulate_action_to_state(self, S_t_dict, x, t, n):
         '''Does the same as apply action to state, run when checking actions. Run apply_action_to_state for actually appliying actions'''
         # Create a copy of the current state to modify
         S_tx_dict = copy.deepcopy(S_t_dict)
-        S_t_dict = copy.deepcopy(S_t_dict)
         current_step = S_tx_dict['t']
         next_step = current_step + 1
 
@@ -870,11 +840,11 @@ class VFA_ADP:
 
         if action_type == 'swap':
             # 1. Swap the assignments of the aircraft for the flight
-            old_aircraft_id = next((aircraft_id for aircraft_id, aircraft_state in S_t_dict.items()
+            old_aircraft_id = next((aircraft_id for aircraft_id, aircraft_state in S_tx_dict.items()
                                     if aircraft_id != 't' and
                                     aircraft_id != 'time_left' and
                                     any(flight['Flightnr'] == swapped_flight_nr for flight in aircraft_state['flights'])), None)
-            old_aircraft_state = S_t_dict[old_aircraft_id]
+            old_aircraft_state = S_tx_dict[old_aircraft_id]
 
             # Find the flight in the current aircraft's stateflight_nr
             flight_to_swap = next(flight for flight in old_aircraft_state['flights'] if flight['Flightnr'] == swapped_flight_nr)
@@ -887,13 +857,12 @@ class VFA_ADP:
             swapped_flight = flight_to_swap
             overlapping_flights = self.check_overlapping_assignments(S_tx_dict, new_aircraft_id, swapped_flight)
             if overlapping_flights != [] and self.delay_swapped_flight(S_tx_dict, new_aircraft_id, swapped_flight, overlapping_flights, apply=False) is not None:
-                S_tx_dict = copy.deepcopy(self.delay_swapped_flight(S_tx_dict, new_aircraft_id, swapped_flight, overlapping_flights, apply=False))
+                S_tx_dict = self.delay_swapped_flight(S_tx_dict, new_aircraft_id, swapped_flight, overlapping_flights, apply=False)
 
             # 3 Check for unavailability and delay flights if possible
             unavailabilities = S_tx_dict[new_aircraft_id]['UA']
             if self.delay_disrupted_flight(S_tx_dict, new_aircraft_id, swapped_flight, unavailabilities, apply=False) is not None:
-                S_tx_dict = copy.deepcopy(self.delay_disrupted_flight(S_tx_dict, new_aircraft_id, swapped_flight, unavailabilities, apply=False))
-
+                S_tx_dict = self.delay_disrupted_flight(S_tx_dict, new_aircraft_id, swapped_flight, unavailabilities, apply=False)
 
         if action_type == 'none':
             # nothing happens to the assignments when doing nothing.
@@ -908,26 +877,19 @@ class VFA_ADP:
         S_tx_dict['t'] = next_step
 
         S_tx = self.create_hashable_state_key(S_tx_dict)
-        if not S_tx in self.states:
-            # if it is a newly expored state: calculated the intial value as function of t
-            # S_tx_dict['value'] = [-self.cancellation_cost * self.num_conflicts(S_tx_dict)]
-            S_tx_dict['value'] = [-self.cancellation_cost * self.num_conflicts(S_tx_dict)]
-            # next_state['value'] = [0]
-            S_tx_dict['iteration'] = [n]
+        if S_tx in self.states:
+            return self.states[S_tx]
         else:
-            # if state is already explored, value and iteration list is same as already explored value list
-            S_tx_dict['value'] = copy.deepcopy(self.states[S_tx]['value'])
-            S_tx_dict['iteration'] = copy.deepcopy(self.states[S_tx]['iteration'])
-
-        self.states[S_tx] = S_tx_dict
-        # Return the post decision state
-        return S_tx_dict
+            # if it is a newly expored state: calculated the intial value as function of t
+            S_tx_dict['value'] = -self.cancellation_cost * self.num_conflicts(S_tx_dict)
+            # S_tx_dict['value'] = [-self.cancellation_cost * (len(self.flight_data) / len(self.aircraft_ids))]
+            S_tx_dict['iteration'] = 0
+            return S_tx_dict
 
     def apply_action_to_state(self, S_t_dict, x, t, n):
         '''Does the same as apply action to state, run when checking actions. Run apply_action_to_state for actually appliying actions'''
         # Create a copy of the current state to modify
         S_tx_dict = copy.deepcopy(S_t_dict)
-        S_t_dict = copy.deepcopy(S_t_dict)
         current_step = S_tx_dict['t']
         next_step = current_step + 1
 
@@ -935,11 +897,11 @@ class VFA_ADP:
 
         if action_type == 'swap':
             # 1. Swap the assignments of the aircraft for the flight
-            old_aircraft_id = next((aircraft_id for aircraft_id, aircraft_state in S_t_dict.items()
+            old_aircraft_id = next((aircraft_id for aircraft_id, aircraft_state in S_tx_dict.items()
                                     if aircraft_id != 't' and
                                     aircraft_id != 'time_left' and
                                     any(flight['Flightnr'] == swapped_flight_nr for flight in aircraft_state['flights'])), None)
-            old_aircraft_state = S_t_dict[old_aircraft_id]
+            old_aircraft_state = S_tx_dict[old_aircraft_id]
 
             # Find the flight in the current aircraft's stateflight_nr
             flight_to_swap = next(flight for flight in old_aircraft_state['flights'] if flight['Flightnr'] == swapped_flight_nr)
@@ -952,12 +914,12 @@ class VFA_ADP:
             swapped_flight = flight_to_swap
             overlapping_flights = self.check_overlapping_assignments(S_tx_dict, new_aircraft_id, swapped_flight)
             if overlapping_flights != [] and self.delay_swapped_flight(S_tx_dict, new_aircraft_id, swapped_flight, overlapping_flights, apply=False) is not None:
-                S_tx_dict = copy.deepcopy(self.delay_swapped_flight(S_tx_dict, new_aircraft_id, swapped_flight, overlapping_flights, apply=False))
+                S_tx_dict = self.delay_swapped_flight(S_tx_dict, new_aircraft_id, swapped_flight, overlapping_flights, apply=False)
 
             # 3 Check for unavailability and delay flights if possible
             unavailabilities = S_tx_dict[new_aircraft_id]['UA']
             if self.delay_disrupted_flight(S_tx_dict, new_aircraft_id, swapped_flight, unavailabilities, apply=False) is not None:
-                S_tx_dict = copy.deepcopy(self.delay_disrupted_flight(S_tx_dict, new_aircraft_id, swapped_flight, unavailabilities, apply=False))
+                S_tx_dict = self.delay_disrupted_flight(S_tx_dict, new_aircraft_id, swapped_flight, unavailabilities, apply=False)
 
 
         if action_type == 'none':
@@ -971,30 +933,17 @@ class VFA_ADP:
 
         # update time for next state:
         S_tx_dict['t'] = next_step
-
         S_tx = self.create_hashable_state_key(S_tx_dict)
-        if not S_tx in self.states:
-            # if it is a newly expored state: calculated the intial value as function of t
-            S_tx_dict['value'] = [-self.cancellation_cost * self.num_conflicts(S_tx_dict)]
-            # S_tx_dict['value'] = [-self.cancellation_cost * len(self.flight_data)]
-            S_tx_dict['iteration'] = [n]
+
+        if S_tx in self.states:
+            return self.states[S_tx]
+
         else:
-            # if state is already explored, value and iteration list is same as already explored value list
-            S_tx_dict['value'] = copy.deepcopy(self.states[S_tx]['value'])
-            S_tx_dict['iteration'] = copy.deepcopy(self.states[S_tx]['iteration'])
-
-        if t == 0 and n == 2:
-            print(f'CHECK HIER >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
-            print(f'CHECK HIER >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
-            print(f'CHECK HIER >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
-            print(f'CHECK HIER >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
-            self.print_state(S_t_dict)
-            self.print_state(S_tx_dict)
-            self.print_state(self.states[S_tx])
-
-        self.states[S_tx] = S_tx_dict
-        # Return the post decision state
-        return S_tx_dict
+            S_tx_dict['value'] = -self.cancellation_cost * self.num_conflicts(S_tx_dict)
+            # S_tx_dict['value'] = [-self.cancellation_cost * (len(self.flight_data) / len(self.aircraft_ids))]
+            S_tx_dict['iteration'] = 0
+            self.states[S_tx] = S_tx_dict
+            return self.states[S_tx]
 
     def add_exogeneous_info(self, S_tx, n):
         S_tx_dict = self.states[S_tx]
@@ -1018,22 +967,32 @@ class VFA_ADP:
         #     S_t_next_dict['value'] = [S_tx_dict['value'][-1]]
         #     S_t_next_dict['iteration'] = [n]
 
-        return S_t_next_dict
+        return S_t_next_dict, S_t_next
 
     #################### VISUALIZE ###################
     def plot_values(self, value_dict, metric):
         # Extract iterations and corresponding objective values
         iterations = list(value_dict.keys())
         objective_values = list(value_dict.values())
+        smoothing_method = 'Savgol'
+        window_size = int(self.N / 5) if self.N > 15 else 4
+        # Apply the smoothing method (Moving Average or Savitzky-Golay)
+        if smoothing_method == 'MA':
+            smoothed_values = np.convolve(objective_values, np.ones(window_size) / window_size, mode='valid')
+            smoothed_iterations = iterations[:len(smoothed_values)]  # Adjusted iterations
+        elif smoothing_method == 'Savgol':
+            smoothed_values = savgol_filter(objective_values, window_length=window_size, polyorder=3)
+            smoothed_iterations = iterations  # No need to trim iterations for Savitzky-Golay
 
         # Plotting
-        plt.figure(figsize=(15, 8))
-        plt.plot(iterations, objective_values, label=metric)
+        plt.figure(figsize=(8, 5))
+        plt.plot(iterations, objective_values, label=f'Original {metric}', alpha=0.8)
+        plt.plot(smoothed_iterations, smoothed_values, label=f'Smoothed {metric}', linewidth=2)
 
         # Adding labels and title
         plt.xlabel('Iteration')
         plt.ylabel(f'{metric}')
-        plt.title(f'{metric} - Evolution over iterations - {self.folder}')
+        plt.title(f'{metric} - (ε={self.ε}, γ={self.y}, α={self.α}, p={self.p}), Z={self.avg_obj} {self.folder}')
         plt.grid(True)
         plt.legend()
 
@@ -1118,7 +1077,7 @@ class VFA_ADP:
             print(f'\t-{aircraft_id}')
             for key, value in state[aircraft_id].items():
                 print(f'\t\t-{key}: {value}')
-        print(f'\t-Values = {state['value']}')
+        print(f'\t-Value = {state['value']}')
         print(f'\t-Iterations {state['iteration']}')
         state_key = self.create_hashable_state_key(state)
         print(state_key)
@@ -1132,9 +1091,7 @@ class VFA_ADP:
                 for ac in self.aircraft_ids:
                     disruptions[t][ac] = []
 
-                print(self.disruptions)
                 for disruption in self.disruptions:
-                    print(disruption)
                     ac = disruption['Aircraft']
                     Start, End = disruption['StartTime'], disruption['EndTime']
                     disruptions[t][ac].append((Start, End))
@@ -1143,7 +1100,6 @@ class VFA_ADP:
             return self.disruptions
         else:
             return self.disruptions
-
 
 def save_instance(data, filename):
     """Save the policy to a binary file using pickle."""
@@ -1169,9 +1125,18 @@ def load_data(filename):
 
     return policy
 
+def count_disruptions(disruptions):
+    for t in disruptions:
+        empty = False
+        # Check if all disruption lists for all aircraft at time t are empty
+        if all(not disruptions[t][aircraft] for aircraft in disruptions[t]):
+            empty = True
+    return 1 if empty else 0
+
+
 if __name__ == '__main__':
     agg_lvl = 2
-    folder = f"Example"
+    folder = f"TEST1"
 
     aircraft_data, flight_data, rotations_data, disruptions, recovery_start, recovery_end = read_data(folder)
     m = VFA_ADP(aircraft_data, flight_data, disruptions, recovery_start, recovery_end, agg_lvl, folder)
@@ -1179,12 +1144,9 @@ if __name__ == '__main__':
     initial_state = m.initialize_state()
     m.train_with_vfa()
     end_time = time.time()
-
-    m.print_state(m.states[(1, 0.8888888888888888, (4, (), (0.1111111111111111, 0.3333333333333333, 0.3888888888888889, 0.6666666666666666, 0.7222222222222222, 0.8333333333333334, 0.8518518518518519, 1.0740740740740742)), (2, (0.3888888888888889, 0.6111111111111112), (0.2222222222222222, 0.7777777777777778, 0.8888888888888888, 1.0555555555555556)))
-])
-    m.print_state(m.states[(1, 0.8888888888888888, (4, (), (0.1111111111111111, 0.3333333333333333, 0.3888888888888889, 0.6666666666666666, 0.7222222222222222, 0.8333333333333334, 0.8518518518518519, 1.0740740740740742)), (2, (0.3888888888888889, 0.6111111111111112), (0.2222222222222222, 0.7777777777777778, 0.8888888888888888, 1.0555555555555556)))
-])
-
+    T = end_time - start_time
+    print(f'CPU Time: {round(T, 2)}s')
+    print(f'Solved with {round(m.N/T, 2)} iterations per second')
     # for state_key, state_dict in m.states.items():
     #     if state_dict['t'] in [0, 1, 2]:
     #         m.print_state(state_dict)
