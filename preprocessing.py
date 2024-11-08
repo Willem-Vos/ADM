@@ -410,12 +410,40 @@ def ac_index(aircraft_data, aircraft_id):
 def get_ac_dict(aircraft_data, aircraft_id):
     return next(aircraft for aircraft in aircraft_data if aircraft['ID'] == aircraft_id)
 
+
+
 def flight_index(flight_data, flight_nr):
     """Retrieve index of flight in flight_data list"""
     for idx, flight in enumerate(flight_data):
         if flight['Flightnr'] == flight_nr:
             return idx
     return -1  # Return -1 if the flight number is not found
+
+def remove_duplicates(filename):
+    # Load the data (assuming your DataFrame is named 'df')
+    df = pd.read_csv(filename)
+
+    # Sort the data by 'count' in descending order so the highest 'count' appears first for each duplicate
+    df = df.sort_values(by='count', ascending=False)
+
+    # Remove duplicates, keeping only the first occurrence (which has the highest count after sorting)
+    df = df.drop_duplicates(subset=df.columns.difference(['count', 'value']), keep='first')
+
+    # Save or display the filtered data
+    # print(df)
+    # You can save this to a new CSV if needed
+    df.to_csv('_states_last_count.csv', index=False)
+
+def filter_value_estimates(filename):
+    df = pd.read_csv(filename)
+
+    N = max(df['count']) + 1
+    T = max(df['t'])
+    f = 0.70
+    # Filter out rows with 'count' below the threshold
+    df_filtered = df[df['count'] >= f*N*(1 - (df['t']/T))]
+    df_filtered = df_filtered[df_filtered['t'] < T]
+    df_filtered.to_csv('_states_count_threshold.csv', index=False)
 
 
 if __name__ == "__main__":

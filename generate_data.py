@@ -2,6 +2,9 @@ import random
 import os
 from datetime import datetime, timedelta
 
+import pandas as pd
+
+
 def round_to_nearest_quarter_hour(dt):
     minute = dt.minute
     # Round to the nearest 15-minute mark
@@ -21,12 +24,15 @@ def format_time_with_next_day(dt, base_date):
     else:
         return dt.strftime('%H:%M')
 
-def generate_flight_data(num_aircraft, num_flights, start, end, output_folder="TRAIN"):
+
+def generate_flight_data(num_aircraft, num_flights, start, end, max_flights_per_aircraft, output_folder="TRAIN"):
     # Set base date and time range for departures
     date = '10/01/08'
     base_date = datetime.strptime('10/01/08', '%m/%d/%y')
     start_time = timedelta(hours=start)  # Flights start earliest at 06:00
     end_time = timedelta(hours=end)  # Flights latest departure at 20:00
+    curfew_time = end_time + pd.Timedelta(hours=4)
+
     max_flight_duration = timedelta(hours=8)
     min_flight_duration = timedelta(hours=1)
 
@@ -39,7 +45,7 @@ def generate_flight_data(num_aircraft, num_flights, start, end, output_folder="T
     #######################
     for instance in range(1, nr_train_instances + nr_test_instances + 1):
         if instance > nr_train_instances:
-            instance_folder = os.path.join(output_folder, f"TEST{instance-nr_train_instances}")
+            instance_folder = os.path.join(output_folder, f"TEST{instance - nr_train_instances}")
         else:
             instance_folder = os.path.join(output_folder, f"TRAIN{instance}")
 
@@ -51,21 +57,26 @@ def generate_flight_data(num_aircraft, num_flights, start, end, output_folder="T
         rotations_data = []
         flights_data = []
 
-        # Create a list of times when aircraft are available
+        # Track availability and number of flights per aircraft
         aircraft_availability = {ac: [] for ac in aircraft}  # Track flights for each aircraft
+        flights_per_aircraft = {ac: 0 for ac in aircraft}  # Track the number of flights per aircraft
 
         flight_nr = 1
         while flight_nr <= num_flights:
+            # Filter aircraft that have not reached the maximum flights limit
+            available_aircraft = [ac for ac in aircraft if flights_per_aircraft[ac] < max_flights_per_aircraft]
+            if not available_aircraft:
+                break  # Stop if no aircraft is available for more flights
+
             # Randomly assign origin and destination
             origin = random.choice(['CDG', 'LHR', 'JFK', 'NCE', 'BKK'])
             destination = random.choice(['CDG', 'LHR', 'JFK', 'NCE', 'BKK'])
 
-            # Randomly assign an aircraft
-            assigned_aircraft = random.choice(aircraft)
+            # Randomly assign an available aircraft
+            assigned_aircraft = random.choice(available_aircraft)
 
             # Randomize the flight duration between 1 and 5 hours
-            flight_duration = random.randint(60, 300)  # Duration in minutes (1 to 5 hours)
-            flight_duration = timedelta(minutes=flight_duration)
+            flight_duration = timedelta(minutes=random.randint(60, 300))
 
             # Ensure no overlap by finding a valid departure time
             valid_flight = False
@@ -89,8 +100,8 @@ def generate_flight_data(num_aircraft, num_flights, start, end, output_folder="T
                         overlap = True
                         break
 
-                # If no overlap and within time range, flight is valid
-                if not overlap and arrival_time <= (base_date + end_time + timedelta(hours=2)):  # Ensure arrival is within the day
+                # Check if arrival is within curfew time and if no overlap
+                if not overlap and arrival_time <= (base_date + curfew_time):
                     valid_flight = True
                 else:
                     attempts += 1
@@ -98,6 +109,7 @@ def generate_flight_data(num_aircraft, num_flights, start, end, output_folder="T
             if valid_flight:
                 # Add the flight to the aircraft's schedule
                 aircraft_availability[assigned_aircraft].append({'ADT': departure_time, 'AAT': arrival_time})
+                flights_per_aircraft[assigned_aircraft] += 1  # Increment flight count for the aircraft
 
                 # Append to rotations and flights
                 rotations_data.append([flight_nr, base_date.strftime('%m/%d/%y'), assigned_aircraft])
@@ -127,7 +139,6 @@ def generate_flight_data(num_aircraft, num_flights, start, end, output_folder="T
                 f.write(f'{ac}\n')
             f.write('#\n')
 
-
         # Convert timedelta to hours and minutes
         start_hours, start_remainder = divmod(start_time.seconds, 3600)
         end_hours, end_remainder = divmod(end_time.seconds, 3600)
@@ -142,11 +153,13 @@ def generate_flight_data(num_aircraft, num_flights, start, end, output_folder="T
         config_path = os.path.join(instance_folder, 'config.csv')
         with open(config_path, 'w') as f:
             for row in rotations_data:
-                f.write(date+' '+formatted_start_time+' '+date+' '+formatted_end_time+'\n')
+                f.write(date + ' ' + formatted_start_time + ' ' + date + ' ' + formatted_end_time + '\n')
             f.write('#\n')
 
         # Generate alt_aircraft.csv
         generate_alt_aircraft(instance_folder, base_date, aircraft, start, end)
+
+
 
 def generate_alt_aircraft(instance_folder, base_date, aircraft_list, start, end):
     max_ua_period = end-start
@@ -174,9 +187,9 @@ def generate_alt_aircraft(instance_folder, base_date, aircraft_list, start, end)
         f.write('#\n')
 
 if __name__ == '__main__':
-    num_aircraft = 4
+    num_aircraft = 3
     num_flights = 12
     start = 8
-    end = 18
-    generate_flight_data(num_aircraft, num_flights, start, end, output_folder="/Users/willemvos/Thesis/ADM/Data")
+    end = 21
+    generate_flight_data(num_aircraft, num_flights, start, end, max_flights_per_aircraft=5, output_folder="/Users/willemvos/Thesis/ADM/Data")
 
