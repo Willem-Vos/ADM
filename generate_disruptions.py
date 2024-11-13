@@ -41,10 +41,10 @@ def sample_disruption_path(aircraft_ids, single_aircraft, steps, periods, p, see
         aircraft_id = aircraft_ids[0]
 
         # Define the normal distribution parameters
-        mean_timestep = len(steps[1:-2]) / 2  # Center of the time horizon
-        std_dev = len(steps[1:-2]) / 3       # Controls spread; adjust as needed
-        probabilities = norm.pdf(range(len(steps[1:-2])), mean_timestep, std_dev)
-        probabilities /= probabilities.sum()  # Normalize to sum to 1
+        mu = len(steps[1:-2]) / 2 + 1                            # Center of the time horizon
+        s = len(steps[1:-2]) / 3                                 # Controls spread; adjust as needed
+        probabilities = norm.pdf(range(len(steps[1:-2])), mu, s)
+        probabilities /= probabilities.sum()                     # Normalize to sum to 1
         cumulative_probabilities = np.cumsum(probabilities)
 
         disruption_realized = False
@@ -150,7 +150,7 @@ if __name__ == '__main__':
     train_disruptions = {}
     test_disruptions = {}
     single_aircraft= True
-    N = 10001
+    N = 5001
     for n in range(1, N + 1):
         disruption_sample = sample_disruption_path(aircraft_ids, single_aircraft, steps, periods, p, seed=None, distribution='normal')
         train_disruptions[n] = disruption_sample
@@ -162,7 +162,3 @@ if __name__ == '__main__':
     save_disruptions(train_disruptions, f"Disruptions_train")
     save_disruptions(train_disruptions, f"Disruptions_test")
     print(test_disruptions[1])
-    print(test_disruptions[2])
-    print(test_disruptions[3])
-    print(test_disruptions[4])
-    print(test_disruptions[5])
