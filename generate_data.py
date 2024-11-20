@@ -24,6 +24,19 @@ def format_time_with_next_day(dt, base_date):
     else:
         return dt.strftime('%H:%M')
 
+def sample_duration(fixed_duration):
+    duration_min = 1  # minimum duration in hours
+    duration_max = 5  # maximum duration in hours
+    half_hour_increments = 0.5  # 30-minute increments
+
+    # Create an array of possible durations: 1.0, 1.5, 2.0, ..., 5.0 hours
+    possible_durations = np.arange(duration_min, duration_max + half_hour_increments, half_hour_increments)
+
+    # Randomly choose a duration from the possible options
+    duration = np.random.choice(possible_durations)
+    if fixed_duration:
+        return fixed_duration
+    return duration
 
 def generate_flight_data(num_aircraft, num_flights, start, end, max_flights_per_aircraft, output_folder="TRAIN"):
     # Set base date and time range for departures
@@ -31,17 +44,17 @@ def generate_flight_data(num_aircraft, num_flights, start, end, max_flights_per_
     base_date = datetime.strptime('10/01/08', '%m/%d/%y')
     start_time = timedelta(hours=start)  # Flights start earliest at 06:00
     end_time = timedelta(hours=end)  # Flights latest departure at 20:00
-    curfew_time = end_time + pd.Timedelta(hours=4)
+    curfew_time = end_time + pd.Timedelta(hours=8)
 
-    max_flight_duration = timedelta(hours=8)
+    max_flight_duration = timedelta(hours=3)
     min_flight_duration = timedelta(hours=1)
 
     # Generate aircraft list
     aircraft = [f'#{i + 1}' for i in range(num_aircraft)]
 
     ##### INPUT: ##########
-    nr_train_instances = 1000
-    nr_test_instances = 100
+    nr_train_instances = 20
+    nr_test_instances = 20
     #######################
     for instance in range(1, nr_train_instances + nr_test_instances + 1):
         if instance > nr_train_instances:
@@ -76,7 +89,7 @@ def generate_flight_data(num_aircraft, num_flights, start, end, max_flights_per_
             assigned_aircraft = random.choice(available_aircraft)
 
             # Randomize the flight duration between 1 and 5 hours
-            flight_duration = timedelta(minutes=random.randint(60, 300))
+            flight_duration = timedelta(minutes=random.randint(60, 180))
 
             # Ensure no overlap by finding a valid departure time
             valid_flight = False
@@ -159,9 +172,7 @@ def generate_flight_data(num_aircraft, num_flights, start, end, max_flights_per_
         # Generate alt_aircraft.csv
         generate_alt_aircraft(instance_folder, base_date, aircraft, start, end)
 
-
-
-def generate_alt_aircraft(instance_folder, base_date, aircraft_list, start, end):
+def generate_alt_aircraft(instance_folder, base_date, aircraft_list, start, end, prob_range=None):
     max_ua_period = end-start
     min_ua_period = 3
     # Set the window of time
@@ -180,16 +191,27 @@ def generate_alt_aircraft(instance_folder, base_date, aircraft_list, start, end)
     formatted_start_time = (base_date + start_time).strftime('%H:%M')
     formatted_end_time = (base_date + end_time).strftime('%H:%M')
 
-    # Write alt_aircraft.csv
-    alt_aircraft_path = os.path.join(instance_folder, 'alt_aircraft.csv')
-    with open(alt_aircraft_path, 'w') as f:
-        f.write(f'{selected_aircraft} {base_date.strftime("%m/%d/%y")} {formatted_start_time} {base_date.strftime("%m/%d/%y")} {formatted_end_time}\n')
-        f.write('#\n')
+    # In case of direct probabilities of Unavails
+    if prob_range:
+        p = random.uniform(prob_range[0], prob_range[1])
+        realized = random.uniform(0, 1) < p
+
+        # Write alt_aircraft.csv
+        alt_aircraft_path = os.path.join(instance_folder, 'alt_aircraft.csv')
+        with open(alt_aircraft_path, 'w') as f:
+            f.write(f'{selected_aircraft} {base_date.strftime("%m/%d/%y")} {formatted_start_time} {base_date.strftime("%m/%d/%y")} {formatted_end_time} {p} {realized}\n')
+            f.write('#\n')
+    else:
+        # Write alt_aircraft.csv
+        alt_aircraft_path = os.path.join(instance_folder, 'alt_aircraft.csv')
+        with open(alt_aircraft_path, 'w') as f:
+            f.write(f'{selected_aircraft} {base_date.strftime("%m/%d/%y")} {formatted_start_time} {base_date.strftime("%m/%d/%y")} {formatted_end_time}\n')
+            f.write('#\n')
 
 if __name__ == '__main__':
-    num_aircraft = 8
-    num_flights = 32
+    num_aircraft = 4
+    num_flights = 16
     start = 8
-    end = 21
-    generate_flight_data(num_aircraft, num_flights, start, end, max_flights_per_aircraft=5, output_folder="/Users/willemvos/Thesis/ADM/Data")
+    end = 18
+    generate_flight_data(num_aircraft, num_flights, start, end, max_flights_per_aircraft=6, output_folder="/Users/willemvos/Thesis/ADM/Data")
 

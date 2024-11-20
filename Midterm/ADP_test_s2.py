@@ -1,6 +1,6 @@
 from itertools import product
 from old.environment import *
-from disruptions import *
+from generate_disruptions import *
 import os
 import json
 import random

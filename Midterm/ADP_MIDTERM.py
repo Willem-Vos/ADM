@@ -1,6 +1,6 @@
 from itertools import product
 from old.environment import *
-from disruptions import *
+from generate_disruptions import *
 import os
 import json
 import random
@@ -977,17 +977,17 @@ if __name__ == '__main__':
 
     print('Cumulative policy:')
     print(cumulative_policy)
-    # save_instance(cumulative_policy, "policy")
-    # save_instance(cumulative_states, 'states')
-    # save_instance(cumulative_agg_states, 'agg_states')
-    #
-    # policy = load_data('policy')
-    # states = load_data('states')
-    # agg_states = load_data('agg_states')
+    save_instance(cumulative_policy, "policy")
+    save_instance(cumulative_states, 'states')
+    save_instance(cumulative_agg_states, 'agg_states')
 
-    # print(f'Loaded Policy:')
-    # print(policy)
-    # print('\n\n\n\n\n\n\n\n')
+    policy = load_data('policy')
+    states = load_data('states')
+    agg_states = load_data('agg_states')
+
+    print(f'Loaded Policy:')
+    print(policy)
+    print('\n\n\n\n\n\n\n\n')
 
     print('\nAggregate State Keys:>>>>>>')
     for key, value in cumulative_agg_states.items():
