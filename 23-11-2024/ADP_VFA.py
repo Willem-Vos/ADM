@@ -1503,7 +1503,7 @@ def save_instance(data, filename):
 
 def load_data(filename):
     """Load a previously saved policy from a pickle file."""
-    policy_file = os.path.join("policies", f"{filename}.pkl")
+    policy_file = os.path.join("../policies", f"{filename}.pkl")
 
     if not os.path.exists(policy_file):
         raise FileNotFoundError(f"No saved policy found")
@@ -1565,7 +1565,7 @@ if __name__ == '__main__':
     # remove duplicate states and keep the last value approximation
     # remove_duplicates('_state_features.csv')
     # filter_value_estimates('_states_last_count.csv')
-    df = pd.read_csv('_state_features.csv')
+    df = pd.read_csv('../_state_features.csv')
 
     # Separate features (X) and target (y)
     X = df.drop(columns=['value', 'count', 'prev_action', "folder"])
@@ -1639,7 +1639,7 @@ if __name__ == '__main__':
             'model': m.BFA
         }
         df = pd.DataFrame([params])
-        file_path = 'Results.xlsx'
+        file_path = '../Results.xlsx'
         sheet_name = 'Testing'
 
         # Check if the file exists

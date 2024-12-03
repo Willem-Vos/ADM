@@ -53,8 +53,8 @@ def generate_flight_data(num_aircraft, num_flights, start, end, max_flights_per_
     aircraft = [f'#{i + 1}' for i in range(num_aircraft)]
 
     ##### INPUT: ##########
-    nr_train_instances = 20
-    nr_test_instances = 20
+    nr_train_instances = 1000
+    nr_test_instances = 1000
     #######################
     for instance in range(1, nr_train_instances + nr_test_instances + 1):
         if instance > nr_train_instances:
@@ -209,9 +209,15 @@ def generate_alt_aircraft(instance_folder, base_date, aircraft_list, start, end,
             f.write('#\n')
 
 if __name__ == '__main__':
-    num_aircraft = 4
-    num_flights = 16
+    num_aircraft = 6
+    num_flights = 24
     start = 8
     end = 18
-    generate_flight_data(num_aircraft, num_flights, start, end, max_flights_per_aircraft=6, output_folder="/Users/willemvos/Thesis/ADM/Data")
+    generate_flight_data(num_aircraft, num_flights, start, end, max_flights_per_aircraft=7, output_folder="/Users/willemvos/Thesis/ADM/Data")
 
+    # Last training: >> generalises to 10 ac and 60 flights as well!!! >> This was with only one disruption per aircraft.
+    # num_aircraft = 6
+    # num_flights = 36
+    # start = 5
+    # end = 21
+    # 1 Disrupted ac, old features.

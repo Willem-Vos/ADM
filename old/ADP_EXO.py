@@ -1107,7 +1107,7 @@ def save_instance(data, filename):
 
 def load_data(filename):
     """Load a previously saved policy from a pickle file."""
-    policy_file = os.path.join("policies", f"{filename}.pkl")
+    policy_file = os.path.join("../policies", f"{filename}.pkl")
 
     if not os.path.exists(policy_file):
         raise FileNotFoundError(f"No saved policy found")

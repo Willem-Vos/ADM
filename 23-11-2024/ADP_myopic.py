@@ -1167,7 +1167,7 @@ def save_instance(data, filename):
 
 def load_data(filename):
     """Load a previously saved policy from a pickle file."""
-    policy_file = os.path.join("policies", f"{filename}.pkl")
+    policy_file = os.path.join("../policies", f"{filename}.pkl")
 
     if not os.path.exists(policy_file):
         raise FileNotFoundError(f"No saved policy found")
@@ -1251,7 +1251,7 @@ if __name__ == '__main__':
         df = pd.DataFrame([params])
 
         # Define the Excel file path
-        file_path = 'Results.xlsx'
+        file_path = '../Results.xlsx'
         sheet_name = 'Testing'
 
         # Check if the file exists

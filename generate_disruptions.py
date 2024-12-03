@@ -6,7 +6,6 @@ import pickle
 import random
 from scipy.stats import norm
 
-
 def set_seed(seed):
     """Set the seed for NumPy's random number generator."""
     np.random.seed(seed)
@@ -25,73 +24,49 @@ def sample_duration(fixed_duration):
         return fixed_duration
     return duration
 
-def sample_disruption_path(aircraft_ids, single_aircraft, steps, periods, seed, distribution):
+def sample_disruption_path(aircraft_ids, n_disrupted_ac, steps, periods, seed, distribution):
     fixed_duration = 6
     disruptions = {}
-    one_disruption_for_instance = True
+    one_disruption_for_instance = False
 
-
-    # Set the seed for reproducibility if provided
     if seed is not None:
         set_seed(seed)
-
-    # Initialize the disruptions dictionary for all steps and aircraft
     for t in steps:
         disruptions[t] = {}
         for aircraft_id in aircraft_ids:
             disruptions[t][aircraft_id] = []
+    mu = len(steps[1:-2]) / 2 + 1  # Center of the time horizon
+    s = len(steps[1:-2]) / 3  # Controls spread; adjust as needed
+    probabilities = norm.pdf(range(len(steps[1:-2])), mu, s)
+    probabilities /= probabilities.sum()  # Normalize to sum to 1
+    cumulative_probabilities = np.cumsum(probabilities)
 
-    if single_aircraft:
-        aircraft_id = aircraft_ids[0]
+    for i in range(n_disrupted_ac):
+        aircraft_id = aircraft_ids[i]
 
-        # Define the normal distribution parameters
-        mu = len(steps[1:-2]) / 2 + 1                            # Center of the time horizon
-        s = len(steps[1:-2]) / 3                                 # Controls spread; adjust as needed
-        probabilities = norm.pdf(range(len(steps[1:-2])), mu, s)
-        probabilities /= probabilities.sum()                     # Normalize to sum to 1
-        cumulative_probabilities = np.cumsum(probabilities)
         disruption_timestep = random.choice(steps[1:-4])
 
         # Determine if the disruption should be realized based on the sampled probability
-        prob = random.uniform(0, 1)
-        if distribution == 'single_prob' and one_disruption_for_instance:
-            pass
-
-
-
-
-
-        disruption_realized = False
-        for t in steps[1:-2]:  # Time at which the disruption might become known
-
+        p = round(random.uniform(0.5, 0.9), 2)               # get probability of disruption happening for this aircraft
+        disruption_realized = False                                # Flag if disruption happened for this aircraft
+        for t in steps[1:-2]:                                      # Time at which the disruption might become known
             if distribution == 'single_prob':
-                if one_disruption_for_instance:
-
-
-
-
-
-
-
 
                 if disruption_realized:
                     # If a disruption was realized, carry it forward to future timesteps
                     disruptions[t][aircraft_id] = disruptions[t - 1][aircraft_id]
-                else:
-                    p = round(random.uniform(0.5, 0.8), 2)
 
+                elif t == disruption_timestep:
+                    start_time = periods[t]
+                    unavailability_duration = sample_duration(fixed_duration)
+                    unavailability_end_time = start_time + pd.Timedelta(hours=unavailability_duration)
 
-                    if t == disruption_timestep:
-                        start_time = periods[t]
-                        unavailability_duration = sample_duration(fixed_duration)
-                        unavailability_end_time = start_time + pd.Timedelta(hours=unavailability_duration)
+                    # Determine if the disruption should be realized based on the sampled probability
+                    realized = random.uniform(0, 1) < p
 
-                        # Determine if the disruption should be realized based on the sampled probability
-                        realized = random.uniform(0, 1) < p
-
-                        # Store the disruption details
-                        disruptions[t][aircraft_id].append((start_time, unavailability_end_time, p, realized))
-                        disruption_realized = True
+                    # Store the disruption details
+                    disruptions[t][aircraft_id].append((start_time, unavailability_end_time, p, realized))
+                    disruption_realized = True
 
             if distribution == 'normal':
                 # If a disruption was realized in the past, carry it forward
@@ -117,23 +92,6 @@ def sample_disruption_path(aircraft_ids, single_aircraft, steps, periods, seed, 
                     # Disruption will happen exactly at the 'disruption_timestep'
                     if t == disruption_timestep:
                         start_time = periods[t]
-                        unavailability_duration = sample_duration(fixed_duration)
-                        unavailability_end_time = start_time + pd.Timedelta(hours=unavailability_duration)
-
-                        # Store the disruption for the aircraft
-                        disruptions[t][aircraft_id].append((start_time, unavailability_end_time))
-                        disruption_realized = True
-
-    if not single_aircraft:
-        disruption_realized = False
-        for t in steps[1:-2]:  # Time at which the disruption might become known
-            for aircraft_id in aircraft_ids:
-                # If a disruption was realized in the past, carry it forward
-                if disruption_realized:
-                    disruptions[t][aircraft_id] = disruptions[t - 1][aircraft_id]
-                else:
-                    start_time = periods[t]
-                    if np.random.rand() < p:  # Randomly decide if a disruption occurs
                         unavailability_duration = sample_duration(fixed_duration)
                         unavailability_end_time = start_time + pd.Timedelta(hours=unavailability_duration)
 
@@ -191,16 +149,17 @@ if __name__ == '__main__':
 
     train_disruptions = {}
     test_disruptions = {}
-    single_aircraft= True
-    N = 10001
-    for n in range(1, N + 1):
-        disruption_sample = sample_disruption_path(aircraft_ids, single_aircraft, steps, periods, seed=None, distribution='single_prob')
-        train_disruptions[n] = disruption_sample
+    n_disrupted_ac = 2
+    nr_instances = 10001
+    for i in range(1, nr_instances + 1):
+        disruption_sample = sample_disruption_path(aircraft_ids, n_disrupted_ac, steps, periods, seed=None, distribution='single_prob')
+        train_disruptions[i] = disruption_sample
 
-    for n in range(1, N + 1):
-        disruption_sample = sample_disruption_path(aircraft_ids, single_aircraft, steps, periods, seed=None, distribution='single_prob')
-        test_disruptions[n] = disruption_sample
+    for i in range(1, nr_instances + 1):
+        disruption_sample = sample_disruption_path(aircraft_ids, n_disrupted_ac, steps, periods, seed=None, distribution='single_prob')
+        test_disruptions[i] = disruption_sample
 
     save_disruptions(train_disruptions, f"Disruptions_train")
     save_disruptions(train_disruptions, f"Disruptions_test")
     print(test_disruptions[1])
+
