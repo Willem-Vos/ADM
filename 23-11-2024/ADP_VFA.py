@@ -1617,7 +1617,7 @@ if __name__ == '__main__':
         print(folder, '>>', value)
 
     avg_objective_value = sum(objective_values.values()) / len(objective_values)
-    print(f'\nResults for trained ADP model with {m.estimation_method}')
+    print(f'\nResults_Test for trained ADP model with {m.estimation_method}')
     print(f'\tAverage objective value when testing: {avg_objective_value}')
     # print(f'\tExact state encountered: {exact_count} times')
     # print(f'\tAggregated state encountered: {agg_count} times')
@@ -1658,4 +1658,4 @@ if __name__ == '__main__':
         else:
             # If the file doesn't exist, create it and write the dataframe
             df.to_excel(file_path, sheet_name=sheet_name, index=False)
-        print("Results and parameters saved to Excel.")
+        print("Results_Test and parameters saved to Excel.")

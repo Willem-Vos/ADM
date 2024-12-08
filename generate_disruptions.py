@@ -149,7 +149,7 @@ if __name__ == '__main__':
 
     train_disruptions = {}
     test_disruptions = {}
-    n_disrupted_ac = 2
+    n_disrupted_ac = 1
     nr_instances = 10001
     for i in range(1, nr_instances + 1):
         disruption_sample = sample_disruption_path(aircraft_ids, n_disrupted_ac, steps, periods, seed=None, distribution='single_prob')

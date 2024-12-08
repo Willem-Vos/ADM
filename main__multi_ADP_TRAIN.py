@@ -36,7 +36,7 @@ from sklearn.metrics import mean_squared_error
 
 
 class VFA_ADP:
-    def __init__(self, aircraft_data, flight_data, disruptions, recovery_start, recovery_end, agg_lvl, folder):
+    def __init__(self, aircraft_data, flight_data, disruptions, recovery_start, recovery_end, agg_lvl, folder, csv_file):
         self.folder = folder
         self.instance_id = int(self.folder[5::])
         self.aircraft_data = aircraft_data
@@ -63,10 +63,10 @@ class VFA_ADP:
 
         self.cancellation_cost = 300
         self.violation_costs = 150
-        self.swap_cost = 10
+        self.swap_cost = 5
         self.delay_buffer = pd.Timedelta(minutes=5)
 
-        self.N = 3000                        # Number of iterations per instance
+        self.N = 10                          # Number of iterations per instance
         self.y = 1                           # Discount factor
         # self.α = 1 / self.N                # learning rate or stepsize, decaying
         self.α = 0.02                        # Learning rate or stepsize, fixed
@@ -81,11 +81,15 @@ class VFA_ADP:
         self.pruning = False
         self.plot_vals = True
         self.plot_episode = False
+        self.write_feats = False
 
         # States
         self.initial_val = None
         self.initial_value_description = 'n potential conflicts at start'
-        self.csv_file = '_state_features_multi_test.csv'
+        self.csv_file = csv_file
+        self.model_name = '_'.join(csv_file.split('_')[3:]).replace('.csv', '')
+
+
         self.states = dict()
         self.agg_states = dict()
         self.aggregation_level = agg_lvl
@@ -183,6 +187,7 @@ class VFA_ADP:
         tuples = self.calculate_aircraft_overlaps5(state)[3]
         overlap, n_flights, interaction = tuples[0], tuples[1], tuples[2]
         ac1, ac2 = self.prone_aircraft[0], self.prone_aircraft[1]
+        p_1, p_2 = self.potential_disruptions[0][ac1][0][2], self.potential_disruptions[0][ac2][0][2]
         p_1, p_2 = self.potential_disruptions[0][ac1][0][2], self.potential_disruptions[0][ac2][0][2]
         min_val, min_val1, min_val2 = self.min_value(interaction)
         # self.initial_value_description = 'Independent interaction overlaps'
@@ -336,6 +341,7 @@ class VFA_ADP:
 
         int5                         = min_int
         int6                         = min_int1 * p_1 + min_int2 * p_2
+        int7                         = mint_int * E_n_conflicts
         min_util                     = min(utilizations.values())
         # min_n_flights                = min(n_flights_dict.values())
         # min_int1                     = min(int1.values())
@@ -1352,41 +1358,103 @@ class VFA_ADP:
         Returns:
             int: The computed reward.
         """
-        action_type, swapped_flight, new_aircraft_id = action
+        action_type, changed_flight, new_aircraft_id = action
         post_t = post_decision_state['t']
+        pre_t = pre_decision_state['t']
+        t = self.periods[pre_t]
         implicit_canx = 0
         violations = 0
         reward = 0
 
-        for aircraft_id in self.aircraft_ids:
-            # 1. Check how many flights did not get recoverd or violated curfews
-            implicit_canx += self.check_canx(pre_decision_state, post_decision_state, aircraft_id, apply)
-            violations += self.check_curfew_violations(pre_decision_state, post_decision_state, aircraft_id)
+        # REWARD STRUCTURE 1
+        if 'RS1' in self.model_name:
+            for aircraft_id in self.aircraft_ids:
+                # 1. Check how many flights did not get recoverd or violated curfews
+                implicit_canx += self.check_canx(pre_decision_state, post_decision_state, aircraft_id, apply)
+                violations += self.check_curfew_violations(pre_decision_state, post_decision_state, aircraft_id)
 
-        if apply: return reward
+            if apply: return reward
 
-        # Make sure that instead of do nothing, the model actively cancels the flight by choosing 'cancel' action
-        # This way the model cancels the same flight by frees up space by doing so.
-        # if the model does not actively cancels a flight but does nothing, give large negative reward
-        reward -= implicit_canx * 300
-        reward -= violations * self.violation_costs
+            # Make sure that instead of do nothing, the model actively cancels the flight by choosing 'cancel' action
+            # This way the model cancels the same flight by frees up space by doing so.
+            # if the model does not actively cancels a flight but does nothing, give large negative reward
+            reward -= implicit_canx * 300
+            reward -= violations * self.violation_costs
 
-        # Penalties for performing a swap actions
-        if action_type == 'swap':
-            reward -= self.swap_cost
+            # Penalties for performing a swap actions
+            if action_type == 'swap':
+                reward -= self.swap_cost
 
-            # Check if delays were necessary following the swaps:
-            delay = self.check_delays(pre_decision_state, post_decision_state)
-            reward -= delay
-            swapped_flight = next((f for f in post_decision_state[new_aircraft_id]['flights'] if f["Flightnr"] == swapped_flight), None)
+                # Check if delays were necessary following the swaps:
+                delay = self.check_delays(pre_decision_state, post_decision_state)
+                reward -= delay
+                changed_flight = next((f for f in post_decision_state[new_aircraft_id]['flights'] if f["Flightnr"] == changed_flight), None)
 
-            # Impose large penalty on swapping to disruptions
-            new_aircraft_unavails = self.potential_disruptions[post_t-1][new_aircraft_id]
-            if any(self.disrupted(ua, swapped_flight) for ua in new_aircraft_unavails if ua[2] == 1.0):
-                reward -= 10000
+                # Impose large penalty on swapping to disruptions
+                new_aircraft_unavails = self.potential_disruptions[post_t - 1][new_aircraft_id]
+                if any(self.disrupted(ua, changed_flight) for ua in new_aircraft_unavails if ua[2] == 1.0):
+                    reward -= 10000
 
-        if action_type == 'cancel':
-            reward -= self.cancellation_cost
+            if action_type == 'cancel':
+                reward -= self.cancellation_cost
+
+        # REWARD STRUCTURE 2
+        if 'RS2' in self.model_name:
+
+            for aircraft_id in self.aircraft_ids:
+                # 1. Check how many flights did not get recoverd or violated curfews
+                implicit_canx += self.check_canx(pre_decision_state, post_decision_state, aircraft_id, apply)
+                violations += self.check_curfew_violations(pre_decision_state, post_decision_state, aircraft_id)
+
+            if apply: return reward
+
+            # Make sure that instead of do nothing, the model actively cancels the flight by choosing 'cancel' action
+            # This way the model cancels the same flight by frees up space by doing so.
+            # if the model does not actively cancels a flight but does nothing, give large negative reward
+            reward -= implicit_canx * self.cancellation_cost * 2            #Implicit cancelations always have a cost factor of 2.
+            reward -= violations * self.violation_costs
+
+            # Penalties for performing a swap actions
+            if action_type == 'swap':
+                changed_flight = next((f for f in post_decision_state[new_aircraft_id]['flights'] if f["Flightnr"] == changed_flight), None)
+
+                t_0 = self.periods[0]
+                departure_time = changed_flight['ADT']
+
+                t = (departure_time - t).total_seconds() / 60                  # Time left until departure
+                T = (departure_time - t_0).total_seconds() / 60                    # time left until departure from start of recovery window
+                cost_factor = max(1, (2 - t / T)) if T != 0 else 2
+
+                reward -= self.swap_cost
+
+                # Check if delays were necessary following the swaps:
+                delay = self.check_delays(pre_decision_state, post_decision_state)
+                reward -= delay
+
+                # Impose large penalty on swapping to disruptions
+                new_aircraft_unavails = self.potential_disruptions[post_t-1][new_aircraft_id]
+                if any(self.disrupted(ua, changed_flight) for ua in new_aircraft_unavails if ua[2] == 1.0):
+                    reward -= 10000
+
+                reward *= cost_factor
+
+            if action_type == 'cancel':
+                old_aircraft_id = next((ac for ac, ac_state in pre_decision_state.items()
+                                        if ac != 't' and
+                                        ac != 'time_left' and
+                                        any(f['Flightnr'] == changed_flight for f in ac_state['flights'])), None)
+                old_aircraft_state = pre_decision_state[old_aircraft_id]
+                canceled_flight = next(f for f in old_aircraft_state['flights'] if f['Flightnr'] == changed_flight)
+
+                t_0 = self.periods[0]
+                departure_time = canceled_flight['ADT']
+
+                t = (departure_time - t).total_seconds() / 60                  # Time left until departure
+                T = (departure_time - t_0).total_seconds() / 60                    # time left until departure from start of recovery window
+
+                cost_factor = max(1, (2 - t / T)) if T != 0 else 2
+                reward -= self.cancellation_cost
+                reward *= cost_factor
 
         return reward
 
@@ -1805,7 +1873,7 @@ class VFA_ADP:
                     # print(f'{-self.initial_value(S_tx_dict)}')
                     # print()
 
-                    if self.BFA and n == self.N: self.write_features(S_tx_dict, x_hat, file, best_immediate_reward)
+                    # if self.BFA and n == self.N and self.write_feats: self.write_features(S_tx_dict, x_hat, file, best_immediate_reward)
 
                     if self.recovered(S_tx_dict) or S_tx_dict['t'] == self.T:
                         if n > self.N - 3 and self.plot_episode: self.plot_schedule(S_tx_dict, n, self.folder, sum(accumulated_rewards), probs, string=f'{S_tx_dict['value']}')
@@ -2049,7 +2117,7 @@ class VFA_ADP:
         collected_features = pd.DataFrame([self.basis_features(S_tx_dict, x_hat, best_immediate_reward)])
         collected_features.to_csv(file, header=False, index=False)
 
-def train_instance(instance_id):
+def train_instance(instance_id, csv_file):
     folder = f"TRAIN{instance_id}"
     agg_lvl = 2
     print(f"\nTraining for instance {instance_id} in folder {folder}")
@@ -2060,12 +2128,12 @@ def train_instance(instance_id):
     print(f'train_with_vfa time: {time.time() - TIME}')
     return m.N, m.value_evolution, m.obj_evolution, instance_id, m.avg_obj, time.time(), m
 
-def instance_information(instance_id):
+def instance_information(instance_id, csv_file):
     folder = f"TRAIN{instance_id}"
     agg_lvl = 2
     print(f"\nTraining for instance {instance_id} in folder {folder}")
     aircraft_data, flight_data, rotations_data, disruptions, recovery_start, recovery_end = read_data(folder)
-    m = VFA_ADP(aircraft_data, flight_data, disruptions, recovery_start, recovery_end, agg_lvl, folder)
+    m = VFA_ADP(aircraft_data, flight_data, disruptions, recovery_start, recovery_end, agg_lvl, folder, csv_file)
     stepsize = m.α if not m.harmonic_stepsize else m.harmonic_a
 
     return (len(m.aircraft_ids),
@@ -2083,34 +2151,41 @@ if __name__ == '__main__':
     nr_instances = 260
     x = 3
     agg_lvl = 2
-    csv_file = '_state_features_multi_test.csv'  # Define the CSV file path
+    csv_file = '_state_features_multi_RS2_6x24.csv'  # Define the CSV file path
     max_flights = 6
 
     aircraft_data, flight_data, rotations_data, disruptions, recovery_start, recovery_end = read_data('TRAIN1')
     # initialize_csv_multi(csv_file, [aircraft['ID'] for aircraft in aircraft_data], max_flights)
+    m = VFA_ADP(aircraft_data, flight_data, disruptions, recovery_start, recovery_end, agg_lvl, 'TRAIN1', csv_file)
 
+    model_name = m.model_name
+    results = {}
     value_evolutions = {}
     objective_values = {}
     objective_evolutions = {}
-    avg_obj = {}
 
     now = datetime.now()
     start_time = time.time()
     print(f'Training started at {now}')
     with concurrent.futures.ProcessPoolExecutor() as executor:
         futures = [executor.submit(train_instance, instance_id) for instance_id in range(1, nr_instances+1)]
-        # futures = [executor.submit(train_instance, instance_id) for instance_id in range(x, x+1)]
 
         for index, future in enumerate(concurrent.futures.as_completed(futures)):
-            TIME = time.time()
             N_iterations, value_evolution, obj_evolution, instance_id, obj, tim, m  = future.result()
-            instance_id = instance_id
             value_evolutions[instance_id] = value_evolution
             objective_values[instance_id] = obj
             objective_evolutions[instance_id] = obj_evolution
 
     end_time = time.time()
     T = end_time - start_time
+    results['cpu_time']     =      T
+    results['params'] =    {'N': m.N, 'nr_instances': nr_instances, 'alpha': m.harmonic_a, 'gamma': m.y, 'epsilon': m.ε}
+    results['value_evolutions'] = value_evolutions
+    results['objective_evolutions'] = objective_evolutions
+    results['objective_values'] = objective_values
+
+    save_training_results(model_name, results)
+
     TT = end_time - TIME
     print(f'returning values from train_instance() time: {TT} s')
     print("Training done, states and policies saved.")
@@ -2168,7 +2243,7 @@ if __name__ == '__main__':
             # If the file doesn't exist, create it and write the dataframe
             df.to_excel(file_path, sheet_name=sheet_name, index=False)
 
-        print("Results and parameters saved to Excel.")
+        print("Results_Test and parameters saved to Excel.")
 
 
   # Snapshot of memory usage

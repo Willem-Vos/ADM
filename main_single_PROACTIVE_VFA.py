@@ -1,12 +1,12 @@
 from generate_disruptions import *
 from helper import *
-# from ADP_TRAIN import *
 from feature_select import *
 import numpy as np
 import time
 from datetime import timedelta
 import pickle
 import os
+import json
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.decomposition import PCA
@@ -16,6 +16,7 @@ from sklearn.preprocessing import StandardScaler
 class TEST_ADP:
     def __init__(self, aircraft_data, flight_data, disruptions, recovery_start, recovery_end, agg_lvl, folder, pipeline):
         self.folder = folder
+        self.instance_id = int(self.folder[4::])
         self.aircraft_data = aircraft_data
         self.flight_data = flight_data
         self.cancelled_flights = []
@@ -40,13 +41,10 @@ class TEST_ADP:
         self.s = len(self.steps[1:-2]) / 3
         self.max_flights_per_aircraft_prone_ac = 6
 
-        self.probabilities = norm.pdf(range(len(self.steps[1:-2])), self.mu, self.s)
-        self.probabilities /= self.probabilities.sum()                                  # Normalize to sum to 1
-        self.cumulative_probabilities = np.cumsum(self.probabilities)
-
+        self.delay_buffer = pd.Timedelta(minutes=5)
         self.cancellation_cost = 300
         self.violation_costs = 150
-        self.swap_cost = 10
+        self.swap_cost = 5
 
         self.T = self.steps[-1]
         self.N = 1                # Number of iterations per instance
@@ -57,13 +55,8 @@ class TEST_ADP:
         self.harmonic_a = 2.5       # Parameter for calculating harmonic stepsize
 
         self.plot_vals = False
-        self.plot_episode = True
+        self.plot_episode = False
         self.estimation_method = 'BFA'     # 'BFA' or 'aggregation"
-
-        # # States
-        # self.states = states
-        # self.agg_states = agg_states
-        # self.policy = policy
 
         self.scaler, self.pca, self.BFA, self.dropped_features = pipeline
         self.aggregation_level = agg_lvl
@@ -77,7 +70,6 @@ class TEST_ADP:
         current_time = self.periods[t]
         self.states = {}
         state_dict = dict()
-        agg_dict = dict()
 
         state_dict['t'] = 0
         for aircraft in self.aircraft_data:
@@ -88,26 +80,20 @@ class TEST_ADP:
             conflicts = []
             remaining_flights = len(ass_flights)
 
-            aircraft_state = {'conflicts': conflicts, 'UA': unavailibilty, 'flights':ass_flights, 'n_remaining_flights': remaining_flights}
+            aircraft_state = {'conflicts': conflicts, 'UA': unavailibilty, 'flights': ass_flights, 'n_remaining_flights': remaining_flights}
             state_dict[aircraft_id] = aircraft_state
 
         # initial_value = -self.cancellation_cost * self.num_conflicts(state_dict)
+        # initial_value = -self.cancellation_cost * self.expected_num_conflicts(state_dict)
         initial_value = 0
+        # initial_value = 0
 
         # set value of the state to initial value and iteration to zero:
-        state_dict['value'] = initial_value
+        state_dict['value'] = 0
         state_dict['iteration'] = 0
 
-        agg_dict['count'] = 0
-        agg_dict['value'] = initial_value
-        # agg_dict['iteration'] = [0]
-
         state_key = self.create_hashable_state_key(state_dict)
-        # aggregate_state_key = self.G(state_dict, self.aggregation_level)
-
         self.states[state_key] = state_dict
-        # self.agg_states[aggregate_state_key] = agg_dict
-        # self.agg_states[aggregate_state_key]['count'] = 1
 
         return state_dict
 
@@ -121,7 +107,7 @@ class TEST_ADP:
             ass_flights.append(flight)
         return ass_flights
 
-######### HELPER FUNCTIONS: #########
+    ######### HELPER FUNCTIONS: #########
     def get_flight(self, flight_nr, current_state):
         for aircraft_id in self.aircraft_ids:
             aircraft_state = current_state[aircraft_id]
@@ -130,100 +116,27 @@ class TEST_ADP:
                     return flight
         return 'None, Flight not found'
 
-    #OLD FUNCTION - first level of aggregation
-    def G(self, s, lvl):
-        """
-        Create a hashable aggregate key from a state dictionary that generalizes to unseen instances for testing purposes.
-
-        The first level key includes:
-        - n_remaining_flights per aircraft
-        - rounded flight times to hours.
-
-        The second level key includes:
-        - n_remaining_flights per aircraft
-        - n_remaining conflicts per aircraft
-
-        Args:
-            s (dict): A dictionary representing the state of the system.
-
-        Returns:
-            tuple: A hashable representation of the aggregate state.
-        """
-        aggregate_state_key = []
-
-        # First level of aggregation
-        if lvl == 1:
-            # 1. Add the number of remaining flights for each aircraft
-            for aircraft_id in self.aircraft_ids:
-                aircraft_state = s[aircraft_id]
-                # Create a list to store the aircraft attributes
-                aircraft_key = []
-                aircraft_key.append(aircraft_state['n_remaining_flights'])
-                unavailability_times = []
-
-                if aircraft_state['UA']:
-                    unavailability_start = (aircraft_state['UA'][0][0] -  self.recovery_start).total_seconds() / 60 / self.total_recovery_time # Convert to minutes
-                    unavailability_end = (aircraft_state['UA'][0][1] -  self.recovery_start).total_seconds() / 60 / self.total_recovery_time # Convert to minutes
-
-                    unavailability_times.append(unavailability_start)
-                    unavailability_times.append(unavailability_end)
-                aircraft_key.append(tuple(unavailability_times))
-
-                # 2. Round the flight times (departure and arrival) to the nearest hour
-                rounded_flight_times = []
-
-                # Sort the flights by departure time to ensure they are in chronological order
-                sorted_flights = sorted(aircraft_state['flights'], key=lambda flight: flight['ADT'])
-
-                for flight in sorted_flights:
-                    # Round departure and arrival times to nearest hour
-                    rounded_departure = flight['ADT'].replace(minute=0, second=0, microsecond=0) \
-                                        + timedelta(hours=1 if flight['ADT'].minute >= 30 else 0)
-                    rounded_arrival = flight['AAT'].replace(minute=0, second=0, microsecond=0) \
-                                      + timedelta(hours=1 if flight['AAT'].minute >= 30 else 0)
-
-                    # Relative arrtime and deptime to the recovery start time
-                    dep_time = (rounded_departure - self.recovery_start).total_seconds() / 60 / self.total_recovery_time  # Convert to minutes
-                    arr_time = (rounded_arrival - self.recovery_start).total_seconds() / 60 / self.total_recovery_time  # Convert to minutes
-
-                    # Append the rounded times to the list
-                    rounded_flight_times.append(dep_time)
-                    rounded_flight_times.append(arr_time)
-
-                # Add the number of remaining flights and the flight times (as a list, converted to tuple) for this aircraft
-                aircraft_key.append(tuple(rounded_flight_times))
-                aggregate_state_key.append(tuple(aircraft_key))
-
-        # Second level of aggregation
-        if lvl == 2:
-            # 1. Add the number of remaining flights for each aircraft
-            for aircraft_id in self.aircraft_ids:
-                aircraft_state = s[aircraft_id]
-                # Create a list to store the aircraft attributes
-                aircraft_key = []
-                n_conflicts = self.num_ac_conflicts(s, aircraft_id)
-
-                aircraft_key.append(aircraft_state['n_remaining_flights'])
-                aircraft_key.append(n_conflicts)
-
-                aggregate_state_key.append(tuple(aircraft_key))
-
-        # Convert the list to a tuple (to make it hashable)
-        return tuple(aggregate_state_key)
-
     def initial_value(self, state):
         n_flights_dict = {}
         int1 = {}
-        disruption = self.potential_disruptions[0][self.prone_aircraft[0]][0]      # Assume for disruption for one aircraft
+        disruption = self.potential_disruptions[0][self.prone_aircraft[0]][0]  # Assume for disruption for one aircraft
         ua_start, ua_end = disruption[0], disruption[1]
         aircraft_overlaps = self.calculate_aircraft_overlaps(state)
+        n_expected_conflicts = self.expected_num_conflicts(state)
+        # print(f'n_expected_conflicts: {n_expected_conflicts}')
 
         for aircraft in self.aircraft_ids:
             aircraft_state = state[aircraft]
             n_flights_dict[aircraft] = len([f for f in aircraft_state['flights'] if f['AAT'] > ua_start])
             int1[aircraft] = aircraft_overlaps[aircraft] * n_flights_dict[aircraft]
 
-        return min(int1.values())
+        # print(f'min overlap: {min(int1.values())}')
+        # print(f'min int1: {min(int1.values()) * n_expected_conflicts}')
+
+        self.initial_value_description = "int1 * E_n_conflicts"
+        return min(int1.values()) * n_expected_conflicts
+        # return n_expected_conflicts * self.cancellation_cost
+        # return 0
 
     # @profile
     def basis_features(self, state, x):
@@ -244,9 +157,10 @@ class TEST_ADP:
 
         disruption_occured = self.check_disruption_(state['t'])
         E_n_conflicts = self.expected_num_conflicts(state)
-        disruption = self.potential_disruptions[0][self.prone_aircraft[0]][0]      # Assume for disruption for one aircraft
+        disruption = self.potential_disruptions[0][self.prone_aircraft[0]][0]  # Assume for disruption for one aircraft
         ua_start, ua_end = disruption[0], disruption[1]
-
+        p = self.potential_disruptions[0][self.prone_aircraft[0]][0][2]
+        n_potential_conflicts = E_n_conflicts / p
 
         # 1. Add the number of remaining flights for each aircraft
         for aircraft_id in self.aircraft_ids:
@@ -258,7 +172,6 @@ class TEST_ADP:
             int1[aircraft_id] = aircraft_overlaps[aircraft_id] * n_flights_dict[aircraft_id]
             int2[aircraft_id] = utilizations[aircraft_id] * n_flights_dict[aircraft_id]
             int3[aircraft_id] = aircraft_overlaps[aircraft_id] * utilizations[aircraft_id] * n_flights_dict[aircraft_id]
-
             total_conflicts += n_conflicts
 
             # if aircraft_id in self.prone_aircraft:
@@ -305,18 +218,20 @@ class TEST_ADP:
         # print(f'{int2 = }')
         # print(f'{int3 = }')
 
-        features[f'min_prone_overlap'] =         min_overlap
-        features[f'min_n_flights'] =             min_n_flights
-        features[f'min_util'] =                  min_util                       # Lowest utilization from all aircraft
-        features[f'int1'] =                      min_int1                       #  min(overlap        * n_flights)
-        features[f'int2'] =                      min_int2                       #  min(util           *  n_flights)
-        features[f'int3'] =                      min_int3                       #  min(overlap        * util         * n_flights)
-        features[f'int4'] =                      E_n_conflicts * min_overlap    # min(E[n_conflicts] * overlap)
+        features[f'p'] = p  # prob of ac1 disruption
+        features[f'min_prone_overlap'] = min_overlap
+        features[f'min_n_flights'] = min_n_flights
+        features[f'min_util'] = min_util
+        features[f'int1'] = min_int1  # min(overlap        * n_flights)
+        features[f'int2'] = min_int2  # min(util           *  n_flights)
+        features[f'int3'] = min_int3  # min(overlap        * util         * n_flights)
+        features[f'int4'] = E_n_conflicts * min_overlap  # min(E[n_conflicts] * overlap)
 
+        features[f'n_potential_conflics'] = n_potential_conflicts  # misschien weg laten
         features[f'E[n_conflicts]'] = E_n_conflicts
         features[f'total_remaining_conflicts'] = total_conflicts
         features[f'disruption_occured'] = disruption_occured  # If a disruption occured
-        features[f'recovered'] = 1 if disruption_occured == 1 and total_conflicts == 0 else 0
+        features[f'recovered'] = 1.0 if disruption_occured == 1 and total_conflicts == 0 else 0.0
 
         return features
 
@@ -339,13 +254,14 @@ class TEST_ADP:
 
     # @profile
     def individual_probability(self, flight, ac, state):
-        t = state['t']
+        # probabilities are always calculated for the post decision state!!!!!!!!!
+        # therefore take one timestep earlier, so using the known information.
+        t = state['t'] - 1 if state['t'] > 1 else 0
         p = 0.0
         for unavailability in self.potential_disruptions[t][ac]:
             start, end, prob, realises = unavailability
             if self.conflict_overlap(unavailability, flight):
                 p = prob
-
 
         return float(p)
 
@@ -371,7 +287,7 @@ class TEST_ADP:
 
         # 2. Calculate and add the remaining time left in the day
         current_time = self.periods[state_dict['t']]
-        remaining_time = (self.recovery_end - current_time).total_seconds() / 60 / self.total_recovery_time # Time left in minutes
+        remaining_time = (self.recovery_end - current_time).total_seconds() / 60 / self.total_recovery_time  # Time left in minutes
         state_key.append(remaining_time)
 
         # 3. For each aircraft, add the sequence of departure and arrival times
@@ -383,8 +299,8 @@ class TEST_ADP:
             unavailability_times = []
 
             if aircraft_state['UA']:
-                unavailability_start = (aircraft_state['UA'][0][0] -  self.recovery_start).total_seconds() / 60 / self.total_recovery_time # Convert to minutes
-                unavailability_end = (aircraft_state['UA'][0][1] -  self.recovery_start).total_seconds() / 60 / self.total_recovery_time # Convert to minutes
+                unavailability_start = (aircraft_state['UA'][0][0] - self.recovery_start).total_seconds() / 60 / self.total_recovery_time  # Convert to minutes
+                unavailability_end = (aircraft_state['UA'][0][1] - self.recovery_start).total_seconds() / 60 / self.total_recovery_time  # Convert to minutes
 
                 unavailability_times.append(unavailability_start)
                 unavailability_times.append(unavailability_end)
@@ -396,8 +312,8 @@ class TEST_ADP:
 
             for flight in sorted_flights:
                 # Append both the departure and arrival times relative to the recovery start time
-                dep_time = (flight['ADT'] - self.recovery_start).total_seconds() / 60 / self.total_recovery_time # Convert to minutes
-                arr_time = (flight['AAT'] - self.recovery_start).total_seconds() / 60 / self.total_recovery_time # Convert to minutes
+                dep_time = (flight['ADT'] - self.recovery_start).total_seconds() / 60 / self.total_recovery_time  # Convert to minutes
+                arr_time = (flight['AAT'] - self.recovery_start).total_seconds() / 60 / self.total_recovery_time  # Convert to minutes
 
                 # Add both departure and arrival times to the sequence
                 flight_times.append(dep_time)
@@ -462,11 +378,11 @@ class TEST_ADP:
 
                     # Check if there is any disruption event for the specified aircraft
                     if disruption[aircraft] != [] and disruption[aircraft][0][3]:
-                        return 1         # Disruption found for this aircraft
+                        return 1  # Disruption found for this aircraft
 
         return 0  # No disruption found occured this aircraft
 
-########################### LOGIC ###########################
+    ########################### LOGIC ###########################
     def unavailable_for_flight(self, flight, aircraft_id, t):
         """ Checks if the aircraft is unavailable due to disruption at Departure time of flight"""
         for disruption in self.disruptions[t][aircraft_id]:
@@ -633,17 +549,22 @@ class TEST_ADP:
         t = state['t']
         aircraft_overlaps = {}
         for aircraft in self.prone_aircraft:
-            disrupted_flights = [f for f in state[aircraft]['flights'] if any(self.disrupted(u, f) for u in self.potential_disruptions[t][aircraft] if u[2] != 0)]
+            # Again use t-1 to get the disruption information of the post-decision state!!!!!!!!!!!!!!!!!
+            if t > 0:
+                disrupted_flights = [f for f in state[aircraft]['flights'] if any(self.disrupted(u, f) for u in self.potential_disruptions[t - 1][aircraft] if u[2] != 0)]
+                ua_overlaps = [max((ua[1] - f['ADT']).total_seconds() / 60, 0.0) for f in disrupted_flights for ua in self.potential_disruptions[t - 1][aircraft]]
+            else:
+                disrupted_flights = [f for f in state[aircraft]['flights'] if any(self.disrupted(u, f) for u in self.potential_disruptions[0][aircraft] if u[2] != 0)]
+                ua_overlaps = [max((ua[1] - f['ADT']).total_seconds() / 60, 0.0) for f in disrupted_flights for ua in self.potential_disruptions[0][aircraft]]
 
             # Check is flight can be delayed by checking overlap length with end of disruption (overlap with itself)
-            ua_overlaps = [max((ua[1] - f['ADT']).total_seconds() / 60  ,0) for f in disrupted_flights for ua in self.potential_disruptions[t][aircraft]]
             ua_overlap = sum(ua_overlaps)
             aircraft_overlaps[aircraft] = ua_overlap
 
             for other_aircraft in self.aircraft_ids:
                 if other_aircraft != aircraft:
-                    aircraft_overlaps[other_aircraft] = 0
-                    flights_overlap = 0
+                    aircraft_overlaps[other_aircraft] = 0.0
+                    flights_overlap = 0.0
 
                     for f in disrupted_flights:
                         disrupted_flight_start = f['ADT']
@@ -660,7 +581,7 @@ class TEST_ADP:
                                 overlap_minutes = (overlap_end - overlap_start).total_seconds() / 60
                                 flights_overlap += overlap_minutes
 
-                    aircraft_overlaps[other_aircraft] += flights_overlap  # Add flight overlap to the total
+                    aircraft_overlaps[other_aircraft] += float(flights_overlap)  # Add flight overlap to the total
 
         return aircraft_overlaps
 
@@ -689,17 +610,15 @@ class TEST_ADP:
                 print(f'Changed Flight = {changed_flight['Flightnr']} is assigned to {aircraft_id}')
                 print(f'{[flight["Flightnr"] for flight in overlapping_flights]}')
 
-
             for overlapping_flight in overlapping_flights:
                 # Case 1: Swapped/changed flight departs later, delay swapped/changed flight
                 if overlapping_flight['ADT'] < changed_flight['ADT']:
-                    new_start_time = overlapping_flight['AAT'] + pd.Timedelta(minutes=10)
+                    new_start_time = overlapping_flight['AAT'] + self.delay_buffer
                     flight_duration = changed_flight['AAT'] - changed_flight['ADT']
                     new_end_time = new_start_time + flight_duration
 
                     if apply:
                         print(f'Delayed flight {changed_flight["Flightnr"]} with {new_start_time - changed_flight["ADT"]}')
-
 
                     # Apply the delay to the swapped/changed flight
                     changed_flight['ADT'] = new_start_time
@@ -713,7 +632,7 @@ class TEST_ADP:
 
                 # Case 2: Overlapping flight departs later, delay the overlapping flight
                 else:
-                    new_start_time = changed_flight['AAT'] + pd.Timedelta(minutes=10)
+                    new_start_time = changed_flight['AAT'] + self.delay_buffer
                     flight_duration = overlapping_flight['AAT'] - overlapping_flight['ADT']
                     new_end_time = new_start_time + flight_duration
                     if apply:
@@ -778,7 +697,7 @@ class TEST_ADP:
             # Check if the flight's ADT is within the unavailability period
             if self.disruption_overlap(unavailability, disrupted_flight):
                 # Delay the disrupted flight to after the unavailability ends
-                new_start_time = unavailability_end + pd.Timedelta(minutes=10)  # Add a buffer of 10 minutes
+                new_start_time = unavailability_end + self.delay_buffer
                 flight_duration = disrupted_flight['AAT'] - disrupted_flight['ADT']
                 new_end_time = new_start_time + flight_duration
 
@@ -798,7 +717,10 @@ class TEST_ADP:
 
             # Check for subsequent flights and delay them as needed
             overlapping_flights = self.check_overlapping_assignments(temp_next_state, aircraft_id, disrupted_flight)
-            if overlapping_flights != [] and self.delay_swapped_flight(temp_next_state, aircraft_id, disrupted_flight, overlapping_flights, apply=False) is not None:
+            # if overlapping_flights != [] and self.delay_swapped_flight(temp_next_state, aircraft_id, disrupted_flight, overlapping_flights, apply=False) is not None:
+            #     temp_next_state = self.delay_swapped_flight(temp_next_state, aircraft_id, disrupted_flight, overlapping_flights, apply=False)
+
+            if overlapping_flights:
                 temp_next_state = self.delay_swapped_flight(temp_next_state, aircraft_id, disrupted_flight, overlapping_flights, apply=False)
 
         # Update the next state with all delayed flights
@@ -821,7 +743,7 @@ class TEST_ADP:
 
         return total_delay
 
-    def check_canx(self, current_state, next_state, aircraft_id):
+    def check_canx(self, current_state, next_state, aircraft_id, apply):
         current_t = current_state['t']
         if current_t == self.T:
             return 0
@@ -839,6 +761,9 @@ class TEST_ADP:
             # Conflicted flight departs before the next period and still exists in the next state
             if current_time <= conflict['ADT'] < next_time and conflict in post_conflicts:
                 canx += 1
+                if apply:
+                    next_state[aircraft_id]['flights'].remove(conflict)
+                    self.cancelled_flights.append((conflict, aircraft_id))
 
         return canx
 
@@ -860,15 +785,9 @@ class TEST_ADP:
 
         return violations
 
-    def parallel_process_action(self, S_t_dict, x, t, n):
-        S_tx_dict = self.simulate_action_to_state(S_t_dict, x, t, n)
-        r_t = self.compute_reward(S_t_dict, S_tx_dict, x)
-        v_downstream = S_tx_dict['value']
-        return tuple(x), r_t, v_downstream, S_tx_dict
-
     ####################### MDP functions: ########################
     # @profile
-    def compute_reward(self, pre_decision_state, post_decision_state, action):
+    def compute_reward(self, pre_decision_state, post_decision_state, action, apply=False):
         """
         Computes the reward for transitioning from the pre-decision state to the post-decision state.
 
@@ -880,19 +799,23 @@ class TEST_ADP:
         Returns:
             int: The computed reward.
         """
-        reward = 0
-        action_type, swapped_flight, old_aircraft_id = action
-
-        canx = 0
+        action_type, swapped_flight, new_aircraft_id = action
+        post_t = post_decision_state['t']
+        implicit_canx = 0
         violations = 0
+        reward = 0
+
         for aircraft_id in self.aircraft_ids:
             # 1. Check how many flights did not get recoverd or violated curfews
-            canx += self.check_canx(pre_decision_state, post_decision_state, aircraft_id)
+            implicit_canx += self.check_canx(pre_decision_state, post_decision_state, aircraft_id, apply)
             violations += self.check_curfew_violations(pre_decision_state, post_decision_state, aircraft_id)
+
+        if apply: return reward
 
         # Make sure that instead of do nothing, the model actively cancels the flight by choosing 'cancel' action
         # This way the model cancels the same flight by frees up space by doing so.
-        reward -= canx * 10000
+        # if the model does not actively cancels a flight but does nothing, give large negative reward
+        reward -= implicit_canx * 300
         reward -= violations * self.violation_costs
 
         # Penalties for performing a swap actions
@@ -902,12 +825,82 @@ class TEST_ADP:
             # Check if delays were necessary following the swaps:
             delay = self.check_delays(pre_decision_state, post_decision_state)
             reward -= delay
+            swapped_flight = next((f for f in post_decision_state[new_aircraft_id]['flights'] if f["Flightnr"] == swapped_flight), None)
+
+            # Impose large penalty on swapping to disruptions
+            new_aircraft_unavails = self.potential_disruptions[post_t - 1][new_aircraft_id]
+            if any(self.disrupted(ua, swapped_flight) for ua in new_aircraft_unavails if ua[2] == 1.0):
+                reward -= 10000
 
         if action_type == 'cancel':
             reward -= self.cancellation_cost
 
-        # # add 10 rewards for time costs
-        # reward -= 10
+        return reward
+
+    def compute_reward2(self, pre_decision_state, post_decision_state, action, apply=False):
+        """
+        Computes the reward for transitioning from the pre-decision state to the post-decision state.
+
+        Args:
+            pre_decision_state (dict): The state of the system before the action was taken.
+            post_decision_state (dict): The state of the system after the action was taken.
+            action (tuple): The action taken, which could be a swap or other types of actions.
+
+        Returns:
+            int: The computed reward.
+        """
+        action_type, swapped_flight, new_aircraft_id = action
+        post_t = post_decision_state['t']
+        pre_t = pre_decision_state['t']
+        implicit_canx = 0
+        violations = 0
+        reward = 0
+
+        for aircraft_id in self.aircraft_ids:
+            # 1. Check how many flights did not get recoverd or violated curfews
+            implicit_canx += self.check_canx(pre_decision_state, post_decision_state, aircraft_id, apply)
+            violations += self.check_curfew_violations(pre_decision_state, post_decision_state, aircraft_id)
+
+        if apply: return reward
+
+        # Make sure that instead of do nothing, the model actively cancels the flight by choosing 'cancel' action
+        # This way the model cancels the same flight by frees up space by doing so.
+        # if the model does not actively cancels a flight but does nothing, give large negative reward
+        reward -= implicit_canx * self.cancellation_cost * 2  # Implicit cancelations always have a cost factor of 2.
+        reward -= violations * self.violation_costs
+
+        # Penalties for performing a swap actions
+        if action_type == 'swap':
+            t_0 = self.periods[0]
+            departure_time = swapped_flight['ADT']
+            t = departure_time - pre_t  # Time left until departure
+            T = departure_time - t_0  # time left until departure from start of recovery window
+
+            cost_factor = (2 - t / T)
+
+            reward -= self.swap_cost * cost_factor
+
+            # Check if delays were necessary following the swaps:
+            delay = self.check_delays(pre_decision_state, post_decision_state)
+            reward -= delay * cost_factor
+            swapped_flight = next((f for f in post_decision_state[new_aircraft_id]['flights'] if f["Flightnr"] == swapped_flight), None)
+
+            # Impose large penalty on swapping to disruptions
+            new_aircraft_unavails = self.potential_disruptions[post_t - 1][new_aircraft_id]
+            if any(self.disrupted(ua, swapped_flight) for ua in new_aircraft_unavails if ua[2] == 1.0):
+                reward -= 10000
+
+        if action_type == 'cancel':
+            canceled_flight = next((f for f in post_decision_state[new_aircraft_id]['flights'] if f["Flightnr"] == swapped_flight), None)
+
+            t_0 = self.periods[0]
+            departure_time = canceled_flight['ADT']
+            t = departure_time - pre_t  # Time left until departure
+            T = departure_time - t_0  # time left until departure from start of recovery window
+
+            cost_factor = (2 - t / T)
+
+            reward -= self.cancellation_cost * cost_factor
 
         return reward
 
@@ -923,7 +916,7 @@ class TEST_ADP:
         actions = [('none', 'none', 'none')]
 
         # Precompute utilizations and potential disruption overlaps for all aircraft
-        utilizations = {ac: self.calculate_utilization(current_state, ac) for ac in self.aircraft_ids}
+        # utilizations = {ac: self.calculate_utilization(current_state, ac) for ac in self.aircraft_ids}
 
         # Iterate over all aircraft
         for aircraft_id in self.aircraft_ids:
@@ -941,31 +934,30 @@ class TEST_ADP:
                 # Create cancellation action for each future flight
                 actions.append(('cancel', flight_nr, 'none'))
 
-                swap_to_potential_disruption = {ac: any(self.disruption_overlap(ua, flight) for ua in self.potential_disruptions[t][ac]) for ac in self.aircraft_ids}
+                # swap_to_potential_disruption = {ac: any(self.disruption_overlap(ua, flight) for ua in self.potential_disruptions[t][ac]) for ac in self.aircraft_ids}
 
                 # Collect valid swap actions:
                 no_action_ids = set()
                 for ac in self.aircraft_ids:
 
                     # Mask swapping flights to own ac when ac is not prone to disruptions (nothing will happen)
-                    if ac not in self.prone_aircraft and ac == aircraft_id:
+                    if ac == aircraft_id and ac not in self.prone_aircraft:
                         no_action_ids.add(ac)
 
-                    # Mask swaps to aircraft with (potential) unavailability overlap
-                    if swap_to_potential_disruption[ac] and ac != aircraft_id:
-                        no_action_ids.add(ac)
-
-                    # Mask aircraft with utilization above threshold
-                    if utilizations[ac] > 0.8 and self.pruning:
-                        no_action_ids.add(ac)  # Mask aircraft with utilization above threshold
+                    # # Mask swaps to aircraft with (potential) unavailability overlap
+                    # if swap_to_potential_disruption[ac] and ac != aircraft_id:
+                    #     no_action_ids.add(ac)
+                    #
+                    # # Mask aircraft with utilization above threshold
+                    # if utilizations[ac] > 0.8 and self.pruning:
+                    #     no_action_ids.add(ac)  # Mask aircraft with utilization above threshold
 
                 # Consider swapping this flight to every other (non-masked) aircraft
                 other_aircraft_ids = set(self.aircraft_ids) - no_action_ids
-                # for other_aircraft_id in other_aircraft_ids:
                 actions.extend([('swap', flight_nr, other_aircraft_id) for other_aircraft_id in other_aircraft_ids])
 
         # Convert the list of actions to a numpy array
-        actions = np.array(actions, dtype=object)
+        # actions = actions, dtype=object)
         return actions
 
     def simulate_action_to_state(self, S_t_dict, x, t, n):
@@ -1025,14 +1017,15 @@ class TEST_ADP:
 
         # Update time for next state:
         S_tx_dict['t'] = next_step
-
         S_tx = self.create_hashable_state_key(S_tx_dict)
         if S_tx in self.states:
-            return self.states[S_tx]
+            S_tx_dict['value'] = self.states[S_tx]['value']
+            S_tx_dict['iteration'] = self.states[S_tx]['iteration']
+            return S_tx_dict
         else:
             # if it is a newly expored state: calculated the intial value as function of t
             # S_tx_dict['value'] = -self.cancellation_cost * self.num_conflicts(S_tx_dict)
-            S_tx_dict['value'] = -self.cancellation_cost * self.expected_num_conflicts(S_tx_dict)
+            # S_tx_dict['value'] = -self.cancellation_cost * self.expected_num_conflicts(S_tx_dict)
             S_tx_dict['value'] = -self.initial_value(S_tx_dict)
             # S_tx_dict['value'] = [-self.cancellation_cost * (len(self.flight_data) / len(self.aircraft_ids))]
             S_tx_dict['iteration'] = 0
@@ -1055,6 +1048,7 @@ class TEST_ADP:
                                     any(flight['Flightnr'] == swapped_flight_nr for flight in aircraft_state['flights'])), None)
             old_aircraft_state = S_tx_dict[old_aircraft_id]
             flight_to_swap = next(flight for flight in old_aircraft_state['flights'] if flight['Flightnr'] == swapped_flight_nr)
+
             # Remove the flight from the old aircraft and assign it to the new aircraft
             S_tx_dict[old_aircraft_id]['flights'].remove(flight_to_swap)
             self.cancelled_flights.append((flight_to_swap, old_aircraft_id))
@@ -1077,7 +1071,10 @@ class TEST_ADP:
             # 2 Check for overlaps and delay flights if possible:
             swapped_flight = flight_to_swap
             overlapping_flights = self.check_overlapping_assignments(S_tx_dict, new_aircraft_id, swapped_flight)
-            if overlapping_flights != [] and self.delay_swapped_flight(S_tx_dict, new_aircraft_id, swapped_flight, overlapping_flights, apply=False) is not None:
+            # if overlapping_flights != [] and self.delay_swapped_flight(S_tx_dict, new_aircraft_id, swapped_flight, overlapping_flights, apply=False) is not None:
+            #     S_tx_dict = self.delay_swapped_flight(S_tx_dict, new_aircraft_id, swapped_flight, overlapping_flights, apply=True)
+
+            if overlapping_flights:
                 S_tx_dict = self.delay_swapped_flight(S_tx_dict, new_aircraft_id, swapped_flight, overlapping_flights, apply=False)
 
             # 3 Check for unavailability and delay flights if possible
@@ -1097,22 +1094,21 @@ class TEST_ADP:
         # Update time for next state:
         S_tx_dict['t'] = next_step
 
+        for ac in self.aircraft_ids: self.check_canx(S_t_dict, S_tx_dict, ac, apply=True)
+
         S_tx = self.create_hashable_state_key(S_tx_dict)
         if S_tx in self.states:
-            return self.states[S_tx], S_tx
+            S_tx_dict['value'] = self.states[S_tx]['value']
+            S_tx_dict['iteration'] = self.states[S_tx]['iteration'] + 1
+            self.states[S_tx]['iteration'] += 1
+            return S_tx_dict, S_tx
         else:
-            # if it is a newly expored state: calculated the intial value as function of t
-            # S_tx_dict['value'] = -self.cancellation_cost * self.num_conflicts(S_tx_dict)
-            S_tx_dict['value'] = -self.cancellation_cost * self.expected_num_conflicts(S_tx_dict)
             S_tx_dict['value'] = -self.initial_value(S_tx_dict)
-            # print(f'INITAL VALUE OF S_tx = {S_tx_dict['value']}')
-            # S_tx_dict['value'] = [-self.cancellation_cost * (len(self.flight_data) / len(self.aircraft_ids))]
             S_tx_dict['iteration'] = 0
             self.states[S_tx] = S_tx_dict
             return self.states[S_tx], S_tx
 
-    def add_exogeneous_info(self, S_tx, n):
-        S_tx_dict = self.states[S_tx]
+    def add_exogeneous_info(self, S_tx_dict, n):
         t = S_tx_dict['t']
         W_t_next = self.disruptions[t]
         S_t_next_dict = copy.deepcopy(S_tx_dict)
@@ -1133,15 +1129,10 @@ class TEST_ADP:
             aircraft_state['n_remaining_flights'] = self.num_remaing_flights(S_t_next_dict, aircraft_id, t)
 
         S_t_next = self.create_hashable_state_key(S_t_next_dict)
-        # if not S_t_next in self.states:
-        #     # if it is a newly expored state: calculated the intial value as function of t
-        #     S_t_next_dict['value'] = [-self.cancellation_cost * self.num_conflicts(S_t_next_dict)]
-        #     S_t_next_dict['value'] = [S_tx_dict['value'][-1]]
-        #     S_t_next_dict['iteration'] = [n]
 
         return S_t_next_dict, S_t_next
 
-################### SOLVE: ###################
+    ################### SOLVE: ###################
     def solve_with_gurobi(self, S_t_dict, X_ta, t, n):
         # Initialize the Gurobi model
         model = gp.Model("ADP_Optimization")
@@ -1184,28 +1175,41 @@ class TEST_ADP:
             raise ValueError("No valid action found")
 
     def solve_with_vfa(self):
-        probs = (0.0, 1.0)              # test instance for both a scenario where disruption occurs and one where it does not
-        for prob in probs:
-            print(f'\n{prob = }')
-            disruptions = load_disruptions("Disruptions_test")
-            next_state = self.states[self.initial_state_key]
-            initial_expected_value = next_state['value']
-            n = int(self.folder[4::])
+        calc_kpis = True
+        disruptions = load_disruptions("Disruptions_test")
+        n = int(self.folder[4::])
 
-            self.disruptions = disruptions[n]    # Take n'th disruption realization path for the n'th test folder
-            self.potential_disruptions, realised = self.sample_realisation(prob)
-            self.disruptions = self.update_disruption_bools(realised)
-            p = self.potential_disruptions[0]['#1'][0][2]
-            print(f'{p=}')
-            # print(f'{self.potential_disruptions}')
+        self.disruptions = disruptions[self.instance_id]
+        self.disruptions_at_last_t = self.disruptions[self.T]
+        p1, p2 = self.disruptions_at_last_t['#1'][0][2], (1 - self.disruptions_at_last_t['#1'][0][2])
+
+        combinations = [(0.0), (1.0)]
+        probabilities = [round(p, 3) for p in [p1, p2]]
+
+        weighted_objective_values = {}
+        self.weighted_objective_value = 0
+        self.kpis = {}
+        self.robustness_metrics = {}
+
+        for i in range(len(combinations)):
+            start = time.time()
+            next_state = self.states[self.initial_state_key]
+            self.potential_disruptions, realisation_tuples, probs = self.sample_realisation_combination(i)
+            self.disruptions = self.update_disruption_bools(realisation_tuples)
+            self.cancelled_flights = []
 
             accumulated_rewards = []
             objective_function_values = {}
-            self.objective_values = []
+            self.objective_value = 0
+            probs = combinations[i]
+            probability = probabilities[i]
+
+            #KPI's:
+            self.involved_aircraft, self.swapped_flights, self.n_swaps, self.n_actions = [], [], 0, 0
 
             for t in self.steps[:-1]:
                 if self.plot_episode:
-                    self.plot_schedule(next_state, n, self.folder, prob, sum(accumulated_rewards))
+                    self.plot_schedule(next_state, n, self.folder, probs, sum(accumulated_rewards))
 
                 S_t_dict = next_state
                 S_t = self.create_hashable_state_key(S_t_dict)
@@ -1248,101 +1252,181 @@ class TEST_ADP:
 
                 # Add the post decisions state to states and update state for the next step:
                 S_tx_dict, S_tx = self.apply_action_to_state(S_t_dict, x_hat, t, n=-1)
-                S_t_next_dict, S_t_next = self.add_exogeneous_info(S_tx, n=-1)
+                S_t_next_dict, S_t_next = self.add_exogeneous_info(S_tx_dict, n=-1)
                 next_state = S_t_next_dict
-
                 objective_value = sum(accumulated_rewards)
+
+                if calc_kpis:
+                    self.track_kpis(x_hat)
+
+                if self.recovered(next_state):
+                    if self.plot_episode:
+                        self.plot_schedule(next_state, n, self.folder, probs, sum(accumulated_rewards))
+                    break
 
                 if next_state['t'] == self.T:
                     if self.plot_episode:
-                        self.plot_schedule(next_state, n, self.folder, prob, sum(accumulated_rewards))
-                    print(f'Objective value {objective_value}')
-                    print(f'rewards: {accumulated_rewards}')
+                        self.plot_schedule(next_state, n, self.folder, probs, sum(accumulated_rewards))
 
-                self.objective_values.append(objective_value)
+            end = time.time()
+            cpu_time = end - start
+            self.objective_value = objective_value
+            self.weighted_objective_value += objective_value * probability
+            self.kpis[probability], self.robustness_metrics[probability] = self.calculate_kpis(next_state, accumulated_rewards, cpu_time, objective_value)
 
-            self.objective_value = p * self.objective_values[0] + (1-p) * self.objective_values[1]
-            print(f'Probability Weighed Objective value:{self.objective_value} ')
+        self.weighted_kpis, self.weighted_rb = self.calculate_weighted_metrics()
 
-    ####################### FUNCTION APPROXIMATION LOGIC ########################
-    def interpolate_value(self, current_agg_state_key, nearest_states):
+        # print(self.folder)
+        # print(self.kpis)
+        # print()
+        # print(self.robustness_metrics)
+        # print()
+        # print(self.weighted_kpis)
+        # print()
+        # print(self.weighted_rb)
+
+    def track_kpis(self, x_hat):
+        if x_hat[0] == 'swap':
+            self.n_swaps += 1
+            self.n_actions += 1
+            if x_hat[1] not in self.swapped_flights: self.swapped_flights.append(x_hat[1])
+            if x_hat[2] not in self.involved_aircraft: self.involved_aircraft.append(x_hat[2])
+
+        elif x_hat[0] != 'none':
+            self.n_actions += 1
+
+        for canx in self.cancelled_flights:
+            if canx not in self.involved_aircraft: self.involved_aircraft.append(canx[1])
+
+    def calculate_kpis(self, last_state, accumulated_rewards, cpu_time, objective_value):
+        '''
+        KPI's to obtain:
+        - # delayed flights     (float)
+        - # cancelled flight    (float)
+        - total delay           (float (minutes))
+        - # affected flights total and per tail (float)
+        - # nr of aircraft involved in the recovery (float)
+        - time to full recovery (float (minutes))
+        - Accumulated rewards (list)
+
+        Robustness:
+        - nr swaps,    (float)
+        - nr actions,  (float)
+        - nr changed flights, (float)
+        - # aircraft involved in the recovery, (float)
+        - metric for slack in recovered schedule, (float)
+        '''
+
+
+        intial_state = self.states[self.initial_state_key]
+        cancelled_flightnrs = [f['flightnr'] for f in self.cancelled_flights[0]] if self.cancelled_flights else []
+        flights_T = [f for ac in self.aircraft_ids for f in last_state[ac]['flights']]
+        flights_0 = {f['Flightnr']: f for ac in self.aircraft_ids for f in intial_state[ac]['flights']}
+
+
+        n_swaps = self.n_swaps
+        n_actions = self.n_actions
+        nr_involved_aircraft = len(self.involved_aircraft)
+        n_cancelled = len(self.cancelled_flights)
+        time_to_recovered = len(accumulated_rewards) * 60
+
+
+        delayed_flight_nrs = []
+        violations = 0
+        n_delayed = 0
+        total_delay = 0
+        affected_flights = 0
+        slack = 0
+
+        horizon = self.T + 1
+        rewards_length = len(accumulated_rewards)
+        if rewards_length < horizon:
+            accumulated_rewards.extend([0] * (horizon - rewards_length))
+
+        # calculate n_delayed_flights & total_delay
+        for f_T in flights_T:
+
+            if flights_0[f_T['Flightnr']]["ADT"] < f_T["ADT"]:
+                n_delayed += 1
+                delayed_flight_nrs.append(f_T['Flightnr'])
+                total_delay += (f_T["ADT"] - flights_0[f_T['Flightnr']]["ADT"]).total_seconds() / 60
+
+            if f_T["AAT"] > self.curfew:
+                violations =+ 1
+
+        affected_flights = set(self.swapped_flights).union(set(cancelled_flightnrs)).union(set(delayed_flight_nrs))
+        nr_affected_flights = len(affected_flights)
+
+        kpis = {'objective_value':         objective_value,
+                'n_delayed':                n_delayed,
+                 'total_delay' :            total_delay,
+                 'n_cancelled':             n_cancelled,
+                 'n_swaps':                 n_swaps,
+                 'n_actions':               n_actions,
+                 'affected_flights':        nr_affected_flights,
+                 'nr_involved_aircraft':    nr_involved_aircraft,
+                 'time_to_recovered':       time_to_recovered,
+                 'accumulated_rewards':     accumulated_rewards,
+                 'violations':              violations,
+                 'cpu':                     cpu_time
+                }
+
+        robustness_metrics = {  'n_swaps':              n_swaps,
+                                'n_actions':            n_actions,
+                                'affected_flights':     nr_affected_flights,
+                                'nr_involved_aircraft': nr_involved_aircraft,
+                                'slack':                slack,
+        }
+
+
+        return kpis, robustness_metrics
+
+    def calculate_weighted_metrics(self):
         """
-        Interpolate or extrapolate the value for the current aggregate state based on its nearest neighbors.
+        Calculate the weighted values for metrics based on their respective weights.
 
         Args:
-            current_agg_state_key (tuple): The key for the current aggregate state.
-            nearest_states (list): A list of tuples (nearest_state_key, distance).
+            data (dict): A dictionary where keys are weights and values are metric dictionaries.
 
         Returns:
-            float: The interpolated or extrapolated value.
+            dict: A dictionary with the weighted values for each metric.
         """
-        # Check if we have exact matches (distance = 0)
-        exact_matches = [state for state, dist in nearest_states if dist == 0]
-        # if exact_matches:
-        #     # If there's an exact match, return its value
-        #     return self.agg_states[exact_matches[0]]['value']
+        # Initialize a dictionary to store the weighted sums
+        weighted_kpis = {}
+        weighted_robustness_metrics = {}
+        kpi_data = self.kpis
+        rb_data = self.robustness_metrics
 
-        # Otherwise, perform inverse distance weighting for interpolation
-        weights = []
-        values = []
+        # Iterate over the data to calculate weighted sums for each metric
+        for weight, metrics in kpi_data.items():
+            for metric, value in metrics.items():
+                # print(metric, value)
+                if metric not in weighted_kpis:
+                    # Initialize the metric in the dictionary
+                    weighted_kpis[metric] = [0] * len(value) if isinstance(value, list) else 0
 
-        for state_key, distance in nearest_states:
-            # Avoid division by zero for states with very small distances
-            if distance < 1e-6:
-                weights.append(1.0)
-            else:
-                weights.append(1.0 / distance)  # Inverse of distance as the weight
+                # Handle accumulated_rewards (or lists) separately
+                if isinstance(value, list):
+                    # print(f'ashdfalskjdfhlaksjf')
+                    # print(metric, weighted_kpis[metric])
+                    # If already initialized as a list, add weighted values
+                    weighted_kpis[metric] = [
+                        weighted_kpis[metric][i] + value[i] * weight for i in range(len(value))
+                    ]
+                else:
+                    # Handle numeric values
+                    weighted_kpis[metric] += value * weight
 
-            values.append(self.agg_states[state_key]['value'])
 
-        # Normalize the weights and calculate the weighted average of values
-        total_weight = sum(weights)
-        if total_weight == 0:
-            return np.mean(values)  # If all distances are 0, return a simple average
+        # Iterate over the data to calculate weighted sums for each metric
+        for weight, metrics in rb_data.items():
+            for metric, value in metrics.items():
+                if metric not in weighted_robustness_metrics:
+                    # Initialize the metric in the dictionary
+                    weighted_robustness_metrics[metric] = 0
+                weighted_robustness_metrics[metric] += value * weight
 
-        weighted_value = sum(w * v for w, v in zip(weights, values)) / total_weight
-        return weighted_value
-
-    def find_nearest_aggregate_states(self, current_agg_state_key, k=3):
-        """
-        Find the k nearest aggregate states based on the calculated distance.
-
-        Args:
-            current_agg_state_key (tuple): The key for the current aggregate state.
-            k (int): The number of nearest neighbors to find.
-
-        Returns:
-            List of tuples: (nearest_state_key, distance).
-        """
-        distances = []
-
-        # Loop through all known aggregate states and calculate the distance
-        for agg_state_key in self.agg_states.keys():
-            distance = self.distance(current_agg_state_key, agg_state_key)
-            distances.append((agg_state_key, distance))
-
-        # Sort the distances and return the k nearest states
-        distances.sort(key=lambda x: x[1])
-
-        return distances[:k]  # Return the k nearest states
-
-    def distance(self, state1, state2, conflict_weight=5.0):
-        """
-        Calculate a weighted Euclidean distance between two aggregated states.
-        Each state is a tuple of (n_remaining_flights, n_remaining_conflicts) for each aircraft.
-        The conflict_weight parameter allows adjusting the importance of the conflicts in the distance calculation.
-        """
-        # Ensure both states are the same length (same number of aircraft)
-        assert len(state1) == len(state2), "States must have the same number of aircraft."
-
-        total_distance = 0
-        # Loop through each aircraft's state and calculate the distance
-        for (flights_1, conflicts_1), (flights_2, conflicts_2) in zip(state1, state2):
-            # Calculate the weighted distance for conflicts
-            distance = np.sqrt((flights_1 - flights_2) ** 2 + conflict_weight * (conflicts_1 - conflicts_2) ** 2)
-            total_distance += distance
-
-        return total_distance
+        return weighted_kpis, weighted_robustness_metrics
 
     #################### VISUALIZE ###################
     def plot_values(self, value_dict):
@@ -1539,15 +1623,78 @@ class TEST_ADP:
 
         return future_disruptions, realised
 
-    def update_disruption_bools(self, new_bool):
+    def sample_realisation_combination(self, i):
+        '''Function return realised for only disruption, usage of function should be modified such that is knows which disruptions are realised and which have not'''
+
+        future_disruptions = {}
+        all_disruptions = self.disruptions_at_last_t
+        p1 = self.disruptions_at_last_t['#1'][0][2]
+        p2 = (1-p1)
+
+        # get realisation probabilities for all combinations of realisations
+        # [(0, 0), (0, 1), (1, 0), (1, 1)]
+        combinations = [(0, 0), (1, 1)]
+        probabilities = [round(p, 3) for p in [p1, p2]]
+        probs = {}
+        realisation_dict = dict()
+
+        probs = {self.prone_aircraft[k]: combinations[i][k] for k in range(len(self.prone_aircraft))}
+
+        # probs = {ac: 0 for ac in self.prone_aircraft}
+        # Iterate over each time step in self.disruptions
+        for t in self.steps:
+            future_disruptions[t] = {}
+
+            # Iterate over each aircraft's disruptions at this time step
+            for aircraft_id, disruption_list in all_disruptions.items():
+                disruptions = []
+
+                # Check each disruption
+                for disruption in disruption_list:
+                    start_time, end_time, p, realised = disruption
+                    prob = probs[aircraft_id]
+                    realised = prob < p
+                    d = start_time, end_time, p, realised
+
+                    # Include disruptions if they are in the future or have been realised
+                    if start_time > self.periods[t]:
+                        disruptions.append(d)
+
+                    elif start_time <= self.periods[t]:
+                        p = 1.0 if realised else 0.0
+                        disruptions.append((start_time, end_time, p, realised))
+
+                    realisation_dict[aircraft_id] = realised
+
+                # Store the filtered disruptions for this aircraft
+                future_disruptions[t][aircraft_id] = disruptions
+
+        probs = [round(p, 3) for p in list(probs.values())]
+        return future_disruptions, realisation_dict, probs
+
+    def update_disruption_bools(self, realisation_dict):
+        """
+        Update the `realised` booleans in `self.disruptions` based on the provided `realisation_tuples`.
+
+        :param realisation_tuples: A set of tuples in the form (aircraft_id, realised)
+        :return: Updated `self.disruptions`
+        """
         for t, aircraft_disruptions in self.disruptions.items():
+            # Iterate over each aircraft's disruptions at this time step
             for aircraft_id, disruptions in aircraft_disruptions.items():
-                if disruptions:  # Check if the list of disruptions is not empty
-                    self.disruptions[t][aircraft_id] = [
-                        (start_time, end_time, prob, new_bool)
-                        for start_time, end_time, prob, realised in disruptions
-                    ]
+                if aircraft_id in self.prone_aircraft:
+                    realises = realisation_dict[aircraft_id]
+                    for disruption in disruptions:
+
+                        start_time, end_time, p, _ = disruption
+                        self.disruptions[t][aircraft_id][0] = start_time, end_time, p, realises
+
         return self.disruptions
+
+    def recovered(self, state):
+        t = state['t']
+        disruption_happened = True if self.potential_disruptions[t][self.prone_aircraft[0]][0][0] < self.periods[t] else False
+        return (disruption_happened and self.num_conflicts(state) == 0)
 
 def save_instance(data, filename):
     """Save the policy to a binary file using pickle."""
@@ -1601,111 +1748,150 @@ def standardize(features, filename):
 
     return standardized_row
 
-if __name__ == '__main__':
-    nr_test_instances = 3
-    x = 4
-    test_folders = [f'TEST{instance}' for instance in range(x, x+1)]
+def test_instance(instance_id, pipeline):
+    folder = f'TEST{instance_id}'
     agg_lvl = 2
-    objective_values = {}
 
-    write_results = True
-    check_errors = True
-    optimize_mae = False
+    print(f"\nTesting trained ADP model for instance {folder}")
+    aircraft_data, flight_data, rotations_data, disruptions, recovery_start, recovery_end = read_data(folder)
 
-    TIME =  time.time()
-    df = pd.read_csv('_state_features_main.csv')
-    df = df[df['t'] != 0]
-    # Separate features (X) and target (y)
-    X = df.drop(columns=['value', 'count', 'prev_action', "folder"])
-    y = df['value']
-    data = df.drop(columns=['count', 'prev_action', "folder"])
+    m = TEST_ADP(aircraft_data, flight_data, disruptions, recovery_start, recovery_end, agg_lvl, folder, pipeline)
 
-    X, y, dropped_features = filter_correlation(X, y, data)
-    print(f'Dropped features: {dropped_features}')
+    initial_state = m.initialize_state()
+    m.solve_with_vfa()
+    # m.solve_with_vfa()
 
-    # Standardize the features  (MLP, Lin, Ridge)
-    scaler = StandardScaler()
-    X = scaler.fit_transform(X)
 
-    # # Step 1: Apply PCA
-    pca = PCA(n_components=0.95)  # Choose enough components to explain 95% of variance
-    X_PCA = pca.fit_transform(X)
-    print(f"Number of components selected: {pca.n_components_}")
+    return m
 
-    # Step 3: Initialize and fit the model
-    # BFA = LinearRegression()  # Replace with your preferred model if necessary
-    # BFA = MLPRegressor(hidden_layer_sizes=(100, 50), max_iter=500)
-    # BFA = GradientBoostingRegressor(n_estimators=100, max_depth=3)
-    BFA = RandomForestRegressor(n_estimators=375, max_depth=15)
+if __name__ == '__main__':
+    training_instances_list = [50,100,150,200,300,400,500,600,640]
+    for training_instances in training_instances_list:
+        nr_test_instances = 100
+        x = 4
+        test_folders = [f'TEST{instance}' for instance in range(x, x+1)]
+        folders = [f'TEST{instance}' for instance in range(1, nr_test_instances+1)]
+        csv_file = '_state_features_single_RS1_6x24.csv'                                # '_state_features_single_RS1_6x24.csv'
+        config = '_'.join(csv_file.split('_')[3:]).replace('.csv', '')      # 'single_RS1_6x24'
+        model      = 'PROACTIVE_VFA'
+        write_results = False
+        check_errors = True
+        optimize_mae = False
 
-    if optimize_mae:
-        e_range = np.arange(start=50, stop=1050, step=50)
-        d_range = np.arange(start=5, stop=300, step=25)
-        optimize_RFR(X, y, e_range, d_range)
+        agg_lvl = 2
+        objective_values = {}
+        kpis = {}
+        robustness_metrics = {}
 
-    if check_errors:
-        test_model(X, y, BFA)
-        # test_model_with_kfold(X, y, BFA)
+        TIME =  time.time()
+        df = pd.read_csv(csv_file)
+        df = df[df['t'] != 0]
+        # training_instances = 600
+        df = df[df['folder'].str[5:].astype(int) <= training_instances]
+        print(len(df))
+        X = df.drop(columns=['value', 'count', 'prev_action', "folder"])
+        y = df['value']
+        data = df.drop(columns=['count', 'prev_action', "folder"])
+        X, y, dropped_features = filter_correlation(X, y, data)
+        print(f'Dropped features: {dropped_features}')
+        scaler = StandardScaler()
+        X = scaler.fit_transform(X)
+        pca = PCA(n_components=0.95)  # Choose enough components to explain 95% of variance
+        X_PCA = pca.fit_transform(X)
+        print(f"Number of components selected: {pca.n_components_}")
 
-    BFA.fit(X, y)
-    pipeline = (scaler, pca, BFA, dropped_features)
+        # Step 3: Initialize and fit the model
+        # BFA = LinearRegression()  # Replace with your preferred model if necessary
+        # BFA = MLPRegressor(hidden_layer_sizes=(100, 50), max_iter=500)
+        # BFA = GradientBoostingRegressor(n_estimators=100, max_depth=3)
+        BFA = RandomForestRegressor(max_depth=17, max_features= 0.3, min_samples_leaf= 4, min_samples_split=4, n_estimators=250)
+        if optimize_mae:
+            e_range = np.arange(start=50, stop=1050, step=50)
+            d_range = np.arange(start=5, stop=300, step=25)
+            optimize_RFR(X, y, e_range, d_range)
 
-    start_time = time.time()
-    for folder in test_folders:
-    # for folder in ["TEST4", "TEST5", "TEST6"]:
-        print(f"\nTesting trained ADP model for instance {folder}")
-        aircraft_data, flight_data, rotations_data, disruptions, recovery_start, recovery_end = read_data(folder)
+        if check_errors:
+            test_model(X, y, BFA)
+            test_model_with_kfold(X, y, BFA)
+        BFA.fit(X, y)
+        pipeline = (scaler, pca, BFA, dropped_features)
 
-        m = TEST_ADP(aircraft_data, flight_data, disruptions, recovery_start, recovery_end, agg_lvl, folder, pipeline)
 
-        initial_state = m.initialize_state()
-        m.solve_with_vfa()
 
-        objective_values[folder] = m.objective_value
-        print(m.objective_value)
-    end_time = time.time()
+        results = {}
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            futures = [executor.submit(test_instance, instance_id, pipeline) for instance_id in range(1, nr_test_instances+1)]
+            # futures = [executor.submit(test_instance, instance_id, pipeline) for instance_id in range(x, x+1)]
 
-    for folder, value in objective_values.items():
-        print(folder, '>>', value)
+            for index, future in enumerate(concurrent.futures.as_completed(futures)):
+                m  = future.result()
+                results[m.folder] = {}
+                objective_values[m.folder] = m.weighted_objective_value
+                results[m.folder]['KPIS'] = m.weighted_kpis
+                results[m.folder]['robustness'] = m.weighted_rb
 
-    avg_objective_value = sum(objective_values.values()) / len(objective_values)
-    print(f'\nResults for trained ADP model with {m.estimation_method}')
-    print(f'\tAverage objective value when testing: {avg_objective_value}')
-    print(f'-------------------------------------------------------------------')
+        #
+        # for folder in folders:
+        # # for folder in folders:
+        # # for folder in ["TEST4", "TEST5", "TEST6"]:
+        #     results[folder] = {}
+        #     print(f"\nTesting trained ADP model for instance {folder}")
+        #     aircraft_data, flight_data, rotations_data, disruptions, recovery_start, recovery_end = read_data(folder)
+        #
+        #     m = TEST_ADP(aircraft_data, flight_data, disruptions, recovery_start, recovery_end, agg_lvl, folder, pipeline)
+        #
+        #     initial_state = m.initialize_state()
+        #     m.solve_with_vfa()
+        #
+        #     objective_values[folder] = m.objective_value
+        #     results[folder]['KPIS'] = m.weighted_kpis
+        #     results[folder]['robustness'] = m.weighted_rb
 
-    M_obj = avg_objective_value
-    min_z = min(objective_values.values())
-    max_z = max(objective_values.values())
+        save_model_results(config, model,  results)
+        for folder, value in objective_values.items():
+            print(folder, '>>', value)
 
-    if write_results:
-        params = {
-            'training_run': '',
-            'obj': M_obj,
-            'min_z': min_z,
-            'max_z': max_z,
-            'Policy': 'VFA',
-            'Method': m.estimation_method,
-            "instance": m.folder,
-            'model': m.BFA
-        }
-        df = pd.DataFrame([params])
-        file_path = 'Results.xlsx'
-        sheet_name = 'Testing'
+        avg_objective_value = sum(objective_values.values()) / len(objective_values)
 
-        # Check if the file exists
-        if os.path.exists(file_path):
-            # If the file exists, append without overwriting
-            with pd.ExcelWriter(file_path, mode='a', engine='openpyxl', if_sheet_exists='overlay') as writer:
-                # Load the workbook to find the correct row
-                workbook = writer.book
-                if sheet_name in workbook.sheetnames:
-                    # Get the last row in the existing sheet
-                    start_row = workbook[sheet_name].max_row
-                else:
-                    # If the sheet does not exist, start from row 0
-                    start_row = 0
-                df.to_excel(writer, sheet_name=sheet_name, index=False, header=(start_row == 0), startrow=start_row)
-        else:
-            # If the file doesn't exist, create it and write the dataframe
-            df.to_excel(file_path, sheet_name=sheet_name, index=False)
-        print("Results and parameters saved to Excel.")
+        print(f'-------------------------------------------------------------------')
+        print(f'{training_instances} TRAINING INSTANCES')
+        print(f'\nResults_Test for trained ADP model with {m.estimation_method}')
+        print(f'\tAverage objective value when testing: {avg_objective_value}')
+        print(f'-------------------------------------------------------------------')
+
+        M_obj = avg_objective_value
+        min_z = min(objective_values.values())
+        max_z = max(objective_values.values())
+
+        if write_results:
+            params = {
+                'training_run': '',
+                'obj': M_obj,
+                'min_z': min_z,
+                'max_z': max_z,
+                'Policy': 'PROACTIVE',
+                'Method': m.estimation_method,
+                "instance": m.folder,
+                'model': m.BFA
+            }
+            df = pd.DataFrame([params])
+            file_path = 'Results.xlsx'
+            sheet_name = 'Testing'
+
+            # Check if the file exists
+            if os.path.exists(file_path):
+                # If the file exists, append without overwriting
+                with pd.ExcelWriter(file_path, mode='a', engine='openpyxl', if_sheet_exists='overlay') as writer:
+                    # Load the workbook to find the correct row
+                    workbook = writer.book
+                    if sheet_name in workbook.sheetnames:
+                        # Get the last row in the existing sheet
+                        start_row = workbook[sheet_name].max_row
+                    else:
+                        # If the sheet does not exist, start from row 0
+                        start_row = 0
+                    df.to_excel(writer, sheet_name=sheet_name, index=False, header=(start_row == 0), startrow=start_row)
+            else:
+                # If the file doesn't exist, create it and write the dataframe
+                df.to_excel(file_path, sheet_name=sheet_name, index=False)
+            print("Results_Test and parameters saved to Excel.")

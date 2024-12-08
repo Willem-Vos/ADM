@@ -45,7 +45,7 @@ class TEST_ADP:
 
         self.cancellation_cost = 300
         self.violation_costs = 150
-        self.swap_cost = 10
+        self.swap_cost = 5
         self.delay_buffer = pd.Timedelta(minutes=5)
 
         self.T = self.steps[-1]
@@ -1326,6 +1326,7 @@ class TEST_ADP:
             # print(f'Probability Weighed Objective value:{self.objective_value} ')
 
     def solve_with_vfa_weighted(self):
+        calc_kpis = True
         disruptions = load_disruptions("Disruptions_test")
         next_state = self.states[self.initial_state_key]
         initial_expected_value = next_state['value']
@@ -1343,22 +1344,21 @@ class TEST_ADP:
         weighted_objective_values = {}
         self.weighted_objective_value = 0
         for i in range(len(combinations)):
-            self.cancelled_flights = []
+            start = time.time()
             next_state = self.states[self.initial_state_key]
             self.potential_disruptions, realisation_tuples, probs = self.sample_realisation_combination(i)
             self.disruptions = self.update_disruption_bools(realisation_tuples)
-            # print()
-            # print(f'probs = {probs}')
-            # print(f'probability = {probabilities[i]}')
-            # print(f'{self.potential_disruptions[0] = }')
-
+            self.cancelled_flights = []
 
             accumulated_rewards = []
             objective_function_values = {}
-            self.objective_values = []
             self.objective_value = 0
             probs = combinations[i]
             probability = probabilities[i]
+
+            # KPI's:
+            self.involved_aircraft, self.swapped_flights, self.n_swaps, self.n_actions = [], [], 0, 0
+
             for t in self.steps[:-1]:
                 if self.plot_episode:
                     self.plot_schedule(next_state, n, self.folder, sum(accumulated_rewards), probs, string=f'')
@@ -1415,14 +1415,15 @@ class TEST_ADP:
                 # Add the post decisions state to states and update state for the next step:
 
                 S_tx_dict, S_tx = self.apply_action_to_state(S_t_dict, x_hat, t, n=-1)
-                if self.recovered(S_tx_dict) or S_tx_dict['t'] == self.T:
-                    # print(f'{i = }, {t = }, {self.recovered(S_tx_dict) = }')
-                    if self.plot_episode: self.plot_schedule(S_tx_dict, n, self.folder, sum(accumulated_rewards), probs, string=f'')
-                    # print(f'Plotting for {i = }, {t = }, ')
-                    break
-
                 S_t_next_dict, S_t_next = self.add_exogeneous_info(S_tx_dict, n=-1)
                 next_state = S_t_next_dict
+
+                if calc_kpis:
+                    self.track_kpis(x_hat)
+
+                if self.recovered(S_tx_dict) or S_tx_dict['t'] == self.T:
+                    if self.plot_episode: self.plot_schedule(S_tx_dict, n, self.folder, sum(accumulated_rewards), probs, string=f'')
+                    break
 
                 if next_state['t'] == self.T:
                     if self.plot_episode:
@@ -1431,15 +1432,22 @@ class TEST_ADP:
                     print(f'Objective value {objective_value}')
                     print(f'rewards: {accumulated_rewards}')
 
+            end = time.time()
+            cpu_time = end - start
             self.objective_value = objective_value
-            weighted_objective_values[probability] = objective_value * probability
             self.weighted_objective_value += objective_value * probability
-            # print(i, '>>', objective_value, 'p=', probability)
+            self.kpis[probability], self.robustness_metrics[probability] = self.calculate_kpis(next_state, accumulated_rewards, cpu_time, objective_value)
+
+        self.weighted_kpis, self.weighted_rb = self.calculate_weighted_metrics()
 
         print(self.folder)
-        # print(weighted_objective_values)
-        print(self.weighted_objective_value)
+        print(self.kpis)
         print()
+        print(self.robustness_metrics)
+        print()
+        print(self.weighted_kpis)
+        print()
+        print(self.weighted_rb)
 
     #################### VISUALIZE ###################
     def plot_values(self, value_dict):
@@ -1678,7 +1686,7 @@ class TEST_ADP:
                     start_time, end_time, p, realised = disruption
                     prob = probs[aircraft_id]
                     realised = prob < p
-                    p = 0
+                    p = 0.0
                     d = start_time, end_time, p, realised
 
                     # Include disruptions if they are in the future or have been realised
@@ -1726,33 +1734,144 @@ class TEST_ADP:
 
         return recovered
 
-    def kpis(self):
-        intial_state = m.initialize_state()
-        last_state = m.final_state
-        cancelled_flightnrs = [f['flightnr'] for f in m.cancelled_flights]
+    def track_kpis(self, x_hat):
+        if x_hat[0] == 'swap':
+            self.n_swaps += 1
+            self.n_actions += 1
+            if x_hat[1] not in self.swapped_flights: self.swapped_flights.append(x_hat[1])
+            if x_hat[2] not in self.involved_aircraft: self.involved_aircraft.append(x_hat[2])
 
+        elif x_hat[0] != 'none':
+            self.n_actions += 1
+
+        for canx in self.cancelled_flights:
+            if canx not in self.involved_aircraft: self.involved_aircraft.append(canx[1])
+
+    def calculate_kpis(self, last_state, accumulated_rewards, cpu_time, objective_value):
+        '''
+        KPI's to obtain:
+        - # delayed flights     (float)
+        - # cancelled flight    (float)
+        - total delay           (float (minutes))
+        - # affected flights total and per tail (float)
+        - # nr of aircraft involved in the recovery (float)
+        - time to full recovery (float (minutes))
+        - Accumulated rewards (list)
+
+        Robustness:
+        - nr swaps,    (float)
+        - nr actions,  (float)
+        - nr changed flights, (float)
+        - # aircraft involved in the recovery, (float)
+        - metric for slack in recovered schedule, (float)
+        '''
+
+        intial_state = self.states[self.initial_state_key]
+        print(self.cancelled_flights)
+        cancelled_flightnrs = [f['flightnr'] for f in self.cancelled_flights[0]] if self.cancelled_flights else []
+        flights_T = [f for ac in self.aircraft_ids for f in last_state[ac]['flights']]
+        flights_0 = {f['Flightnr']: f for ac in m.aircraft_ids for f in intial_state[ac]['flights']}
+
+        n_swaps = self.n_swaps
+        n_actions = self.n_actions
+        nr_involved_aircraft = len(self.involved_aircraft)
+        n_cancelled = len(self.cancelled_flights)
+        time_to_recovered = len(accumulated_rewards) * 60
+
+        delayed_flight_nrs = []
+        violations = 0
         n_delayed = 0
         total_delay = 0
-        n_cancelled = 0
+        affected_flights = 0
+        slack = 0
 
-        flights_T = [f for ac in m.aircraft_ids for f in last_state[ac]['flights']]
-        flights_0 = {f['Flightnr']: f for ac in m.aircraft_ids for f in last_state[ac]['flights']}
+        horizon = self.T + 1
+        rewards_length = len(accumulated_rewards)
+        if rewards_length < horizon:
+            accumulated_rewards.extend([0] * (horizon - rewards_length))
 
+        # calculate n_delayed_flights & total_delay
         for f_T in flights_T:
-            if flights_0[f_T] in flights_T and flights_0[f_T]["ADT"] < f_T["ADT"]:
+
+            if flights_0[f_T['Flightnr']]["ADT"] < f_T["ADT"]:
                 n_delayed += 1
-                total_delay += f_T["ADT"] - flights_0[f_T]["ADT"]
+                delayed_flight_nrs.append(f_T['Flightnr'])
+                total_delay += (f_T["ADT"] - flights_0[f_T['Flightnr']]["ADT"]).total_seconds() / 60
 
-        for ac in m.aircraft_ids:
-            ac_flights_0 = [f['Flightnr'] for f in initial_state[ac]['flights']]
-            ac_flights_T = [f['Flightnr'] for f in last_state[ac]['flights']]
+            if f_T["AAT"] > self.curfew:
+                violations = + 1
 
-        # nr affected flights
+        affected_flights = set(self.swapped_flights).union(set(cancelled_flightnrs)).union(set(delayed_flight_nrs))
+        nr_affected_flights = len(affected_flights)
 
-        # Cancelled Flights
-        n_cancelled = len(m.cancelled_flights)
+        kpis = {'objective_value': objective_value,
+                'n_delayed': n_delayed,
+                'total_delay': total_delay,
+                'n_cancelled': n_cancelled,
+                'n_swaps': n_swaps,
+                'n_actions': n_actions,
+                'affected_flights': nr_affected_flights,
+                'nr_involved_aircraft': nr_involved_aircraft,
+                'time_to_recovered': time_to_recovered,
+                'accumulated_rewards': accumulated_rewards,
+                'violations': violations,
+                'cpu': cpu_time
+                }
 
-        return n_delayed, total_delay, n_cancelled
+        robustness_metrics = {'n_swaps': n_swaps,
+                              'n_actions': n_actions,
+                              'affected_flights': nr_affected_flights,
+                              'nr_involved_aircraft': nr_involved_aircraft,
+                              'slack': slack,
+                              }
+
+        return kpis, robustness_metrics
+
+    def calculate_weighted_metrics(self):
+        """
+        Calculate the weighted values for metrics based on their respective weights.
+
+        Args:
+            data (dict): A dictionary where keys are weights and values are metric dictionaries.
+
+        Returns:
+            dict: A dictionary with the weighted values for each metric.
+        """
+        # Initialize a dictionary to store the weighted sums
+        weighted_kpis = {}
+        weighted_robustness_metrics = {}
+        kpi_data = self.kpis
+        rb_data = self.robustness_metrics
+
+        # Iterate over the data to calculate weighted sums for each metric
+        for weight, metrics in kpi_data.items():
+            for metric, value in metrics.items():
+                # print(metric, value)
+                if metric not in weighted_kpis:
+                    # Initialize the metric in the dictionary
+                    weighted_kpis[metric] = [0] * len(value) if isinstance(value, list) else 0
+
+                # Handle accumulated_rewards (or lists) separately
+                if isinstance(value, list):
+                    # print(f'ashdfalskjdfhlaksjf')
+                    # print(metric, weighted_kpis[metric])
+                    # If already initialized as a list, add weighted values
+                    weighted_kpis[metric] = [
+                        weighted_kpis[metric][i] + value[i] * weight for i in range(len(value))
+                    ]
+                else:
+                    # Handle numeric values
+                    weighted_kpis[metric] += value * weight
+
+        # Iterate over the data to calculate weighted sums for each metric
+        for weight, metrics in rb_data.items():
+            for metric, value in metrics.items():
+                if metric not in weighted_robustness_metrics:
+                    # Initialize the metric in the dictionary
+                    weighted_robustness_metrics[metric] = 0
+                weighted_robustness_metrics[metric] += value * weight
+
+        return weighted_kpis, weighted_robustness_metrics
 
 
 def save_instance(data, filename):
@@ -1827,6 +1946,9 @@ if __name__ == '__main__':
     test_folders = [f'TEST{instance}' for instance in range(x, x+1)]
     agg_lvl = 2
     objective_values = {}
+    csv_file = '_state_features_multi_RS1_6x24.csv'  # '_state_features_multi_RS1_6x24.csv'
+    config = '_'.join(csv_file.split('_')[3:]).replace('.csv', '')  # 'single_RS1_6x24'
+    model = 'REACTIVE_VFA'
 
     write_results = True
     check_errors = True
@@ -1875,35 +1997,27 @@ if __name__ == '__main__':
     BFA.fit(X, y)
     pipeline = (scaler, pca, BFA, dropped_features)
 
-    start_time = time.time()
+    config      = 'multi_RS2_6x24'
+    model       = 'REACTIVE_VFA'
+    results = {}
     with concurrent.futures.ProcessPoolExecutor() as executor:
         futures = [executor.submit(test_instance, instance_id, pipeline) for instance_id in range(1, nr_test_instances+1)]
         # futures = [executor.submit(test_instance, instance_id, pipeline) for instance_id in range(x, x+1)]
 
         for index, future in enumerate(concurrent.futures.as_completed(futures)):
             m  = future.result()
+            results[m.folder] = {}
             objective_values[m.folder] = m.weighted_objective_value
+            results[m.folder]['KPIS'] = m.weighted_kpis
+            results[m.folder]['robustness'] = m.weighted_rb
 
-    # start_time = time.time()
-    # for folder in test_folders:
-    # # for folder in ["TEST4", "TEST5", "TEST6"]:
-    #     print(f"\nTesting trained ADP model for instance {folder}")
-    #     aircraft_data, flight_data, rotations_data, disruptions, recovery_start, recovery_end = read_data(folder)
-    #
-    #     m = TEST_ADP(aircraft_data, flight_data, disruptions, recovery_start, recovery_end, agg_lvl, folder, pipeline)
-    #
-    #     initial_state = m.initialize_state()
-    #     m.solve_with_vfa()
-    #
-    #     objective_values[folder] = m.objective_value
-    #     print(m.objective_value)
-    end_time = time.time()
+    save_model_results(config, model, results)
 
     for folder, value in objective_values.items():
         print(folder, '>>', value)
 
     avg_objective_value = sum(objective_values.values()) / len(objective_values)
-    print(f'\nResults for trained ADP model with {m.estimation_method}')
+    print(f'\nResults_Test for trained ADP model with {m.estimation_method}')
     print(f'\tAverage objective value when testing: {avg_objective_value}')
     print(f'-------------------------------------------------------------------')
 
@@ -1917,7 +2031,7 @@ if __name__ == '__main__':
             'obj': M_obj,
             'min_z': min_z,
             'max_z': max_z,
-            'Policy': 'Reactive',
+            'Policy': 'REACTIVE',
             'Method': 'VFA',
             "instances": nr_test_instances,
             'model': m.BFA
@@ -1942,4 +2056,4 @@ if __name__ == '__main__':
         else:
             # If the file doesn't exist, create it and write the dataframe
             df.to_excel(file_path, sheet_name=sheet_name, index=False)
-    #     print("Results and parameters saved to Excel.")
+    #     print("Results_Test and parameters saved to Excel.")
