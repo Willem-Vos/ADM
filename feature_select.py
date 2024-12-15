@@ -92,28 +92,55 @@ def bayesian_optimization(X, y, model=RandomForestRegressor(random_state=42)):
     print()
     print("Bayes test Set MSE:", mse)
     print("Bayes test Set MAE:", mae)
-    print("Bayes test Set R-squared:", r2)
 
     best_model = bayes_cv.best_estimator_
     test_score = best_model.score(X_test, y_test)
     print("Bayes test Set Score (R^2):", test_score)
 
+    return best_model
+
+
 def test_model(X, y, model):
-    # Step 2: Split data into train and test sets
+    """
+    Test the model using a single train-test split.
+
+    Parameters:
+        X: Features (DataFrame or array-like)
+        y: Target (Series or array-like)
+        model: Machine learning model (e.g., RandomForestRegressor)
+
+    Returns:
+        mse: Mean Squared Error on the test set
+        mae: Mean Absolute Error on the test set
+        rmae: Relative Mean Absolute Error on the test set
+        r2: R-squared score on the test set
+    """
+    # Step 1: Split data into train and test sets
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    # Step 2: Fit the model
     model.fit(X_train, y_train)
 
-    # Step 4: Evaluate model performance on the test set
+    # Step 3: Predict on the test set
     y_pred = model.predict(X_test)
-    # print(y_pred)
+
+    # Step 4: Evaluate model performance
     mse = mean_squared_error(y_test, y_pred)
     mae = mean_absolute_error(y_test, y_pred)
     r2 = r2_score(y_test, y_pred)
 
-    print(f"Mean Squared Error (MSE) on test set: {mse}")
-    print(f"Mean Absolute Error (MAE) on test set: {mae}")
-    print(f"R-squared on test set: {r2}, {model = }\n")
-    return mse, mae
+    # Step 5: Compute Relative MAE (rMAE)
+    mean_target = np.mean(y_test)  # Use test set mean for a fair comparison
+    rmae = mae / mean_target
+
+    # Print results
+    # print(f"Mean Squared Error (MSE) on test set: {mse:.4f}")
+    # print(f"Mean Absolute Error (MAE) on test set: {mae:.4f}")
+    # print(f"Relative Mean Absolute Error (rMAE) on test set: {rmae:.4f}")
+    # print(f"R-squared (R2) on test set: {r2:.4f}, {model = }\n")
+
+    return mse, mae, rmae, r2
+
 
 def test_model_with_kfold(X, y, model, k=5):
     """
@@ -128,6 +155,8 @@ def test_model_with_kfold(X, y, model, k=5):
     Returns:
         avg_mse: Average Mean Squared Error across folds
         avg_mae: Average Mean Absolute Error across folds
+        avg_rmae: Average Relative Mean Absolute Error across folds
+        avg_r2: Average R-squared score across folds
     """
     # Step 1: Initialize k-fold
     kfold = KFold(n_splits=k, shuffle=True, random_state=42)
@@ -137,21 +166,30 @@ def test_model_with_kfold(X, y, model, k=5):
     mae_scorer = make_scorer(mean_absolute_error, greater_is_better=False)
     r2_scorer = make_scorer(r2_score, greater_is_better=False)
 
-    # Step 3: Perform cross-validation
+    # Step 3: Perform cross-validation for MSE, MAE, and R2
     mse_scores = cross_val_score(model, X, y, cv=kfold, scoring=mse_scorer)
     mae_scores = cross_val_score(model, X, y, cv=kfold, scoring=mae_scorer)
     r2_scores = cross_val_score(model, X, y, cv=kfold, scoring=r2_scorer)
 
-    # Step 4: Calculate average scores
+    # Step 4: Calculate average MSE, MAE, and R2
     avg_mse = -np.mean(mse_scores)  # Negate because scorers are negative
     avg_mae = -np.mean(mae_scores)  # Negate because scorers are negative
-    avg_r2 = -np.mean(r2_scores)  # Negate because scorers are negative
+    avg_r2 = -np.mean(r2_scores)    # Negate because scorers are negative
 
-    print(f"Mean Squared Error (MSE) across {k} folds: {avg_mse}")
-    print(f"Mean Absolute Error (MAE) across {k} folds: {avg_mae}")
-    print(f"R-squared across {k} folds: {avg_r2}, {model = }\n")
+    # Step 5: Compute Relative MAE (rMAE)
+    mean_target = np.mean(y)  # Calculate the mean of the target variable
+    avg_rmae = avg_mae / mean_target  # Relative MAE
 
-    return avg_mse, avg_mae
+    # Print results
+    # print(f"Mean Squared Error (MSE) across {k} folds: {avg_mse:.4f}")
+    # print(f"Mean Absolute Error (MAE) across {k} folds: {avg_mae:.4f}")
+    # print(f"Relative Mean Absolute Error (rMAE) across {k} folds: {avg_rmae:.4f}")
+    # print(f"R-squared (R2) across {k} folds: {avg_r2:.4f}")
+
+    return avg_mse, avg_mae, avg_rmae, avg_r2
+
+
+
 
 def optimize_RFR(X, y, n_estimator_range, depth_range):
     maes = {}

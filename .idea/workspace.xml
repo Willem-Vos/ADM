@@ -4,26 +4,24 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="6291196f-5dc1-4c5c-b2f5-59a3beac3516" name="Changes" comment="Multi disruption model and Myopic and Reactive Policy implemented">
-      <change afterPath="$PROJECT_DIR$/comparison_test_results.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/comparison_train_results.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/main_single_MYOPIC.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/main_single_REACTIVE_VFA.py" afterDir="false" />
+    <list default="true" id="6291196f-5dc1-4c5c-b2f5-59a3beac3516" name="Changes" comment="train/test architecture finished">
+      <change afterPath="$PROJECT_DIR$/_mae_vs_trainingsize.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/_process_training_results.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/_state_features_single_RS1_6x24.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/_synthetic_data_analysis.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/23-11-2024/ADP_TRAIN.py" beforeDir="false" afterPath="$PROJECT_DIR$/23-11-2024/ADP_TRAIN.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/23-11-2024/ADP_TRAIN_single_prob.py" beforeDir="false" afterPath="$PROJECT_DIR$/23-11-2024/ADP_TRAIN_single_prob.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/23-11-2024/ADP_VFA.py" beforeDir="false" afterPath="$PROJECT_DIR$/23-11-2024/ADP_VFA.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/23-11-2024/ADP_VFA_single_prob.py" beforeDir="false" afterPath="$PROJECT_DIR$/23-11-2024/ADP_VFA_single_prob.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/23-11-2024/ADP_myopic.py" beforeDir="false" afterPath="$PROJECT_DIR$/23-11-2024/ADP_myopic.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ADP_myopic_single_prob.py" beforeDir="false" afterPath="$PROJECT_DIR$/ADP_myopic_single_prob.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/KPI's.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/generate_disruptions.py" beforeDir="false" afterPath="$PROJECT_DIR$/generate_disruptions.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main_ADP_TRAIN.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_single_ADP_TRAIN.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main_ADP_VFA.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_single_PROACTIVE_VFA.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/comparison_test_results.py" beforeDir="false" afterPath="$PROJECT_DIR$/_process_test_results.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/comparison_train_results.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/feature_select.py" beforeDir="false" afterPath="$PROJECT_DIR$/feature_select.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/generate_data.py" beforeDir="false" afterPath="$PROJECT_DIR$/generate_data.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main__multi_ADP_TRAIN.py" beforeDir="false" afterPath="$PROJECT_DIR$/main__multi_ADP_TRAIN.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main__multi_Myopic.py" beforeDir="false" afterPath="$PROJECT_DIR$/main__multi_Myopic.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main__multi_PROACTIVE_VFA.py" beforeDir="false" afterPath="$PROJECT_DIR$/main__multi_PROACTIVE_VFA.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main__multi_REACTIVE_VFA.py" beforeDir="false" afterPath="$PROJECT_DIR$/main__multi_REACTIVE_VFA.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main_single_ADP_TRAIN.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_single_ADP_TRAIN.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main_single_MYOPIC.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_single_MYOPIC.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main_single_PROACTIVE_VFA.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_single_PROACTIVE_VFA.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main_single_REACTIVE_VFA.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_single_REACTIVE_VFA.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -72,8 +70,10 @@
     <setting file="file://$PROJECT_DIR$/Midterm/ADP_test_multiple.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/Midterm/ADP_test_s1.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/Midterm/ADP_test_s2.py" root0="SKIP_INSPECTION" />
-    <setting file="file://$PROJECT_DIR$/comparison_test_results.py" root0="SKIP_INSPECTION" />
-    <setting file="file://$PROJECT_DIR$/comparison_train_results.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/_mae_vs_trainingsize.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/_process_test_results.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/_process_training_results.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/_synthetic_data_analysis.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/feature_select.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/generate_data.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/generate_disruptions.py" root0="SKIP_INSPECTION" />
@@ -86,6 +86,7 @@
     <setting file="file://$PROJECT_DIR$/main_single_MYOPIC.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/main_single_PROACTIVE_VFA.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/main_single_REACTIVE_VFA.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/main_triple_ADP_TRAIN.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/old/ADP_EXO.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/old/ADP_VFA.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/old/ADP_VFA_main_old.py" root0="SKIP_INSPECTION" />
@@ -146,6 +147,9 @@
     &quot;Python.Data.executor&quot;: &quot;Run&quot;,
     &quot;Python.Environment.executor&quot;: &quot;Run&quot;,
     &quot;Python.TEST.executor&quot;: &quot;Run&quot;,
+    &quot;Python._mae_vs_trainingsize.executor&quot;: &quot;Run&quot;,
+    &quot;Python._process_test_results.executor&quot;: &quot;Run&quot;,
+    &quot;Python._process_training_results.executor&quot;: &quot;Run&quot;,
     &quot;Python.all_flights.executor&quot;: &quot;Run&quot;,
     &quot;Python.alt_states.executor&quot;: &quot;Run&quot;,
     &quot;Python.centralized_dynamic_program.executor&quot;: &quot;Run&quot;,
@@ -160,6 +164,7 @@
     &quot;Python.generate_data.executor&quot;: &quot;Run&quot;,
     &quot;Python.generate_disruptions.executor&quot;: &quot;Run&quot;,
     &quot;Python.grapgh.executor&quot;: &quot;Run&quot;,
+    &quot;Python.mae_vs_trainingsize.executor&quot;: &quot;Run&quot;,
     &quot;Python.main_ADP_TRAIN.executor&quot;: &quot;Run&quot;,
     &quot;Python.main_ADP_VFA.executor&quot;: &quot;Run&quot;,
     &quot;Python.main__multi_ADP_TRAIN.executor&quot;: &quot;Run&quot;,
@@ -168,13 +173,16 @@
     &quot;Python.main__multi_PROACTIVE_VFA.executor&quot;: &quot;Run&quot;,
     &quot;Python.main__multi_REACTIVE_VFA.executor&quot;: &quot;Run&quot;,
     &quot;Python.main_single_ADP_TRAIN.executor&quot;: &quot;Run&quot;,
+    &quot;Python.main_single_MYOPIC.executor&quot;: &quot;Run&quot;,
     &quot;Python.main_single_PROACTIVE_VFA.executor&quot;: &quot;Run&quot;,
+    &quot;Python.main_single_REACTIVE_VFA.executor&quot;: &quot;Run&quot;,
     &quot;Python.preprocessing (1).executor&quot;: &quot;Run&quot;,
     &quot;Python.preprocessing.executor&quot;: &quot;Run&quot;,
     &quot;Python.probabilities.executor&quot;: &quot;Run&quot;,
     &quot;Python.salkdfjnjksladf.executor&quot;: &quot;Run&quot;,
     &quot;Python.scartc.executor&quot;: &quot;Run&quot;,
     &quot;Python.scratch.executor&quot;: &quot;Run&quot;,
+    &quot;Python.synthetic_data_analysis.executor&quot;: &quot;Run&quot;,
     &quot;Python.yo.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
@@ -205,8 +213,8 @@
       <recent name="$PROJECT_DIR$/Single_aggregation" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.main_single_ADP_TRAIN">
-    <configuration name="comparison_test_results" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+  <component name="RunManager" selected="Python._process_test_results">
+    <configuration name="_process_test_results" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="ADM" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -220,7 +228,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/comparison_test_results.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/_process_test_results.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -229,7 +237,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="comparison_train_results" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="generate_disruptions" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="ADM" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -243,30 +251,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/comparison_train_results.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
-    <configuration name="main__multi_PROACTIVE_VFA" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="ADM" />
-      <option name="ENV_FILES" value="" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/main__multi_PROACTIVE_VFA.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/generate_disruptions.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -298,7 +283,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="main_single_PROACTIVE_VFA" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="main_single_MYOPIC" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="ADM" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -312,7 +297,30 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/main_single_PROACTIVE_VFA.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/main_single_MYOPIC.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="main_single_REACTIVE_VFA" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="ADM" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/main_single_REACTIVE_VFA.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -322,19 +330,19 @@
       <method v="2" />
     </configuration>
     <list>
-      <item itemvalue="Python.comparison_train_results" />
-      <item itemvalue="Python.comparison_test_results" />
-      <item itemvalue="Python.main__multi_PROACTIVE_VFA" />
-      <item itemvalue="Python.main_single_PROACTIVE_VFA" />
+      <item itemvalue="Python._process_test_results" />
+      <item itemvalue="Python.main_single_MYOPIC" />
+      <item itemvalue="Python.main_single_REACTIVE_VFA" />
+      <item itemvalue="Python.generate_disruptions" />
       <item itemvalue="Python.main_single_ADP_TRAIN" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Python._process_test_results" />
         <item itemvalue="Python.main_single_ADP_TRAIN" />
-        <item itemvalue="Python.main_single_PROACTIVE_VFA" />
-        <item itemvalue="Python.main__multi_PROACTIVE_VFA" />
-        <item itemvalue="Python.comparison_train_results" />
-        <item itemvalue="Python.comparison_test_results" />
+        <item itemvalue="Python.main_single_MYOPIC" />
+        <item itemvalue="Python.main_single_REACTIVE_VFA" />
+        <item itemvalue="Python.generate_disruptions" />
       </list>
     </recent_temporary>
   </component>
@@ -402,7 +410,14 @@
       <workItem from="1733334896782" duration="24077000" />
       <workItem from="1733488901824" duration="11205000" />
       <workItem from="1733504508814" duration="23584000" />
-      <workItem from="1733589610308" duration="3487000" />
+      <workItem from="1733589610308" duration="10703000" />
+      <workItem from="1733674807944" duration="17751000" />
+      <workItem from="1733747720807" duration="21397000" />
+      <workItem from="1733867569594" duration="53432000" />
+      <workItem from="1734098743580" duration="15929000" />
+      <workItem from="1734172662883" duration="15000" />
+      <workItem from="1734172685351" duration="20612000" />
+      <workItem from="1734199697770" duration="3930000" />
     </task>
     <task id="LOCAL-00001" summary="small changes">
       <option name="closed" value="true" />
@@ -540,7 +555,15 @@
       <option name="project" value="LOCAL" />
       <updated>1733241093826</updated>
     </task>
-    <option name="localTasksCounter" value="18" />
+    <task id="LOCAL-00018" summary="train/test architecture finished">
+      <option name="closed" value="true" />
+      <created>1733660023641</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1733660023641</updated>
+    </task>
+    <option name="localTasksCounter" value="19" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -570,7 +593,8 @@
     <MESSAGE value="probabilistic model included" />
     <MESSAGE value="First working proactive model" />
     <MESSAGE value="Multi disruption model and Myopic and Reactive Policy implemented" />
-    <option name="LAST_COMMIT_MESSAGE" value="Multi disruption model and Myopic and Reactive Policy implemented" />
+    <MESSAGE value="train/test architecture finished" />
+    <option name="LAST_COMMIT_MESSAGE" value="train/test architecture finished" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -589,13 +613,14 @@
     <SUITE FILE_PATH="coverage/ADM$ADP_TRAIN_single_prob.coverage" NAME="ADP_TRAIN_single_prob Coverage Results" MODIFIED="1732127180650" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$TEST.coverage" NAME="probabilities Coverage Results" MODIFIED="1731412749097" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$comparison.coverage" NAME="comparison Coverage Results" MODIFIED="1733485072134" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/ADM$main__multi_ADP_TRAIN.coverage" NAME="main__multi_ADP_TRAIN Coverage Results" MODIFIED="1733245320006" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ADM$main__multi_ADP_TRAIN.coverage" NAME="main__multi_ADP_TRAIN Coverage Results" MODIFIED="1733867665930" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$environment.coverage" NAME="environment Coverage Results" MODIFIED="1726759750165" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/old" />
     <SUITE FILE_PATH="coverage/ADM$disruptions.coverage" NAME="generate_disruptions Coverage Results" MODIFIED="1729590425235" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$comparison_test_results.coverage" NAME="comparison_test_results Coverage Results" MODIFIED="1733496237301" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ADM$synthetic_data_analysis.coverage" NAME="synthetic_data_analysis Coverage Results" MODIFIED="1734000234661" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$preprocessing__1_.coverage" NAME="preprocessing (1) Coverage Results" MODIFIED="1726760664745" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$centralized_dynamic_program.coverage" NAME="centralized_dynamic_program Coverage Results" MODIFIED="1724660855652" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/ADM$main__multi_REACTIVE_VFA.coverage" NAME="main__multi_REACTIVE_VFA Coverage Results" MODIFIED="1733221307815" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ADM$main__multi_REACTIVE_VFA.coverage" NAME="main__multi_REACTIVE_VFA Coverage Results" MODIFIED="1734188843106" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$ADP_VFA_alt_rewards.coverage" NAME="ADP_VFA Coverage Results" MODIFIED="1724928815621" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$ADP_EXO_myopic.coverage" NAME="ADP_EXO_myopic Coverage Results" MODIFIED="1731617920975" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$ADP_VFA_main.coverage" NAME="ADP_VFA_main Coverage Results" MODIFIED="1727251835039" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
@@ -606,44 +631,50 @@
     <SUITE FILE_PATH="coverage/ADM$ADP_myopic_single_prob.coverage" NAME="ADP_myopic_single_prob Coverage Results" MODIFIED="1732092918532" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$ADP_VFA_single_actionswithac.coverage" NAME="ADP_VFA_single_actionswithac Coverage Results" MODIFIED="1725381606427" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$Basis_function_approximation.coverage" NAME="Basis_function_approximation Coverage Results" MODIFIED="1730457446325" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ADM$main_single_MYOPIC.coverage" NAME="main_single_MYOPIC Coverage Results" MODIFIED="1734191655942" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$ADP_EXO_TEST.coverage" NAME="ADP_EXO_VFA Coverage Results" MODIFIED="1730397159487" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$Environment.coverage" NAME="Environment Coverage Results" MODIFIED="1723123241323" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$dynamic_program.coverage" NAME="dynamic_program Coverage Results" MODIFIED="1725266352301" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$Data.coverage" NAME="Data Coverage Results" MODIFIED="1730196662563" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$main__multi_ADP_VFA.coverage" NAME="main__multi_REACTIVE_VFA Coverage Results" MODIFIED="1733218191591" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/ADM$generate_disruptions.coverage" NAME="generate_disruptions Coverage Results" MODIFIED="1733249850898" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ADM$generate_disruptions.coverage" NAME="generate_disruptions Coverage Results" MODIFIED="1734190769842" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$scartc.coverage" NAME="scartc Coverage Results" MODIFIED="1728920694856" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$ADP_VFA_sequential.coverage" NAME="ADP_VFA_sequential Coverage Results" MODIFIED="1725376439104" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$ADP_VFA_single_conflicts.coverage" NAME="ADP_VFA_main Coverage Results" MODIFIED="1725896344089" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/ADM$main_single_PROACTIVE_VFA.coverage" NAME="main_single_PROACTIVE_VFA Coverage Results" MODIFIED="1733589523973" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ADM$main_single_PROACTIVE_VFA.coverage" NAME="main_single_PROACTIVE_VFA Coverage Results" MODIFIED="1734186154240" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$ADP_VFA_main_uncertainty.coverage" NAME="ADP_VFA_main Coverage Results" MODIFIED="1726233255807" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$ADP_test_single.coverage" NAME="ADP_test_s1 Coverage Results" MODIFIED="1726824070275" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$scratch.coverage" NAME="scratch Coverage Results" MODIFIED="1724342245985" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$environment2.coverage" NAME="dynamic_program Coverage Results" MODIFIED="1724436811477" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/ADM$main_single_ADP_TRAIN.coverage" NAME="main_single_ADP_TRAIN Coverage Results" MODIFIED="1733589723039" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ADM$main_single_ADP_TRAIN.coverage" NAME="main_single_ADP_TRAIN Coverage Results" MODIFIED="1734255583343" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ADM$main_single_REACTIVE_VFA.coverage" NAME="main_single_REACTIVE_VFA Coverage Results" MODIFIED="1734190778264" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$ADP_EXO.coverage" NAME="ADP_EXO Coverage Results" MODIFIED="1729756073214" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$preprocessing.coverage" NAME="preprocessing Coverage Results" MODIFIED="1726826054352" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$ADP_EXO_VFA.coverage" NAME="ADP_EXO_VFA Coverage Results" MODIFIED="1731667158306" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$ADP_EXO_TRAIN.coverage" NAME="ADP_TRAIN Coverage Results" MODIFIED="1731919538803" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ADM$_mae_vs_trainingsize.coverage" NAME="_mae_vs_trainingsize Coverage Results" MODIFIED="1734176535800" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$main_ADP_VFA.coverage" NAME="main_ADP_VFA Coverage Results" MODIFIED="1732801661619" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$yo.coverage" NAME="yo Coverage Results" MODIFIED="1730481750744" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$ADP_EXO_NP.coverage" NAME="ADP_EXO Coverage Results" MODIFIED="1729238971137" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$ADP_TRAIN.coverage" NAME="ADP_TRAIN Coverage Results" MODIFIED="1731947606916" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$ADP_VFA_Benchmark.coverage" NAME="ADP_VFA_Benchmark Coverage Results" MODIFIED="1726836229998" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$comparison_train_results.coverage" NAME="comparison_train_results Coverage Results" MODIFIED="1733501066082" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ADM$_process_training_results.coverage" NAME="_process_training_results Coverage Results" MODIFIED="1734172889871" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$generate_data.coverage" NAME="generate_data Coverage Results" MODIFIED="1733269436692" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$all_flights.coverage" NAME="alt_states Coverage Results" MODIFIED="1724660928410" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$grapgh.coverage" NAME="grapgh Coverage Results" MODIFIED="1727261417822" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ADM$_process_test_results.coverage" NAME="_process_test_results Coverage Results" MODIFIED="1734256058093" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$ADP_VFA_TRAIN.coverage" NAME="ADP_VFA_TRAIN Coverage Results" MODIFIED="1727953834397" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/ADM$main__multi_Myopic.coverage" NAME="main__multi_Myopic Coverage Results" MODIFIED="1733231148538" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ADM$main__multi_Myopic.coverage" NAME="main__multi_Myopic Coverage Results" MODIFIED="1734189752911" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$ADP_test_single__1_.coverage" NAME="ADP_test_single (1) Coverage Results" MODIFIED="1726760694189" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/a_single_aggregation" />
     <SUITE FILE_PATH="coverage/ADM$DP_costs.coverage" NAME="DP_costs Coverage Results" MODIFIED="1724684664576" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$ADP_VFA_main_propagated.coverage" NAME="ADP_VFA_main_propagated Coverage Results" MODIFIED="1725465289249" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$ADP_test_s2.coverage" NAME="ADP_test_s2 Coverage Results" MODIFIED="1727251838053" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$ADP_VFA_single.coverage" NAME="ADP_VFA_single Coverage Results" MODIFIED="1725391673158" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ADM$mae_vs_trainingsize.coverage" NAME="mae_vs_trainingsize Coverage Results" MODIFIED="1733998793924" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$ADP_VFA_single_prob.coverage" NAME="ADP_VFA_single_prob Coverage Results" MODIFIED="1732122598148" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$ADP_VFA_main__1_.coverage" NAME="ADP_VFA_main (1) Coverage Results" MODIFIED="1726643495548" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/ADM$main__multi_PROACTIVE_VFA.coverage" NAME="main__multi_PROACTIVE_VFA Coverage Results" MODIFIED="1733582787032" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ADM$main__multi_PROACTIVE_VFA.coverage" NAME="main__multi_PROACTIVE_VFA Coverage Results" MODIFIED="1734188085483" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$ADP_test_multiple.coverage" NAME="ADP_test_multiple Coverage Results" MODIFIED="1726748079836" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ADM$ADP_VFA.coverage" NAME="ADP_VFA Coverage Results" MODIFIED="1725366695455" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>

@@ -60,12 +60,8 @@ class TEST_ADP:
         self.plot_episode = False
         self.estimation_method = 'Reactive BFA'     # 'BFA' or 'aggregation"
 
-        # # States
-        # self.states = states
-        # self.agg_states = agg_states
-        # self.policy = policy
-
-        self.scaler, self.pca, self.BFA, self.dropped_features = pipeline
+        self.scaler, self.pca, self.BFA, self.dropped_features, self.csv_file = pipeline
+        self.model_name = '_'.join(self.csv_file.split('_')[3:]).replace('.csv', '')
         self.aggregation_level = agg_lvl
         self.initial_state = self.initialize_state()
         self.initial_state_key = self.create_hashable_state_key(self.initial_state)
@@ -924,41 +920,103 @@ class TEST_ADP:
         Returns:
             int: The computed reward.
         """
-        action_type, swapped_flight, new_aircraft_id = action
+        action_type, changed_flight, new_aircraft_id = action
         post_t = post_decision_state['t']
+        pre_t = pre_decision_state['t']
+        t = self.periods[pre_t]
         implicit_canx = 0
         violations = 0
         reward = 0
 
-        for aircraft_id in self.aircraft_ids:
-            # 1. Check how many flights did not get recoverd or violated curfews
-            implicit_canx += self.check_canx(pre_decision_state, post_decision_state, aircraft_id, apply)
-            violations += self.check_curfew_violations(pre_decision_state, post_decision_state, aircraft_id)
+        # REWARD STRUCTURE 1
+        if 'RS1' in self.model_name:
+            for aircraft_id in self.aircraft_ids:
+                # 1. Check how many flights did not get recoverd or violated curfews
+                implicit_canx += self.check_canx(pre_decision_state, post_decision_state, aircraft_id, apply)
+                violations += self.check_curfew_violations(pre_decision_state, post_decision_state, aircraft_id)
 
-        if apply: return reward
+            if apply: return reward
 
-        # Make sure that instead of do nothing, the model actively cancels the flight by choosing 'cancel' action
-        # This way the model cancels the same flight by frees up space by doing so.
-        # if the model does not actively cancels a flight but does nothing, give large negative reward
-        reward -= implicit_canx * 300
-        reward -= violations * self.violation_costs
+            # Make sure that instead of do nothing, the model actively cancels the flight by choosing 'cancel' action
+            # This way the model cancels the same flight by frees up space by doing so.
+            # if the model does not actively cancels a flight but does nothing, give large negative reward
+            reward -= implicit_canx * 300
+            reward -= violations * self.violation_costs
 
-        # Penalties for performing a swap actions
-        if action_type == 'swap':
-            reward -= self.swap_cost
+            # Penalties for performing a swap actions
+            if action_type == 'swap':
+                reward -= self.swap_cost
 
-            # Check if delays were necessary following the swaps:
-            delay = self.check_delays(pre_decision_state, post_decision_state)
-            reward -= delay
-            swapped_flight = next((f for f in post_decision_state[new_aircraft_id]['flights'] if f["Flightnr"] == swapped_flight), None)
+                # Check if delays were necessary following the swaps:
+                delay = self.check_delays(pre_decision_state, post_decision_state)
+                reward -= delay
+                changed_flight = next((f for f in post_decision_state[new_aircraft_id]['flights'] if f["Flightnr"] == changed_flight), None)
 
-            # Impose large penalty on swapping to disruptions
-            new_aircraft_unavails = self.potential_disruptions[post_t-1][new_aircraft_id]
-            if any(self.disrupted(ua, swapped_flight) for ua in new_aircraft_unavails if ua[2] == 1.0):
-                reward -= 10000
+                # Impose large penalty on swapping to disruptions
+                new_aircraft_unavails = self.potential_disruptions[post_t - 1][new_aircraft_id]
+                if any(self.disrupted(ua, changed_flight) for ua in new_aircraft_unavails if ua[2] == 1.0):
+                    reward -= 10000
 
-        if action_type == 'cancel':
-            reward -= self.cancellation_cost
+            if action_type == 'cancel':
+                reward -= self.cancellation_cost
+
+        # REWARD STRUCTURE 2
+        if 'RS2' in self.model_name:
+
+            for aircraft_id in self.aircraft_ids:
+                # 1. Check how many flights did not get recoverd or violated curfews
+                implicit_canx += self.check_canx(pre_decision_state, post_decision_state, aircraft_id, apply)
+                violations += self.check_curfew_violations(pre_decision_state, post_decision_state, aircraft_id)
+
+            if apply: return reward
+
+            # Make sure that instead of do nothing, the model actively cancels the flight by choosing 'cancel' action
+            # This way the model cancels the same flight by frees up space by doing so.
+            # if the model does not actively cancels a flight but does nothing, give large negative reward
+            reward -= implicit_canx * self.cancellation_cost * 2            #Implicit cancelations always have a cost factor of 2.
+            reward -= violations * self.violation_costs
+
+            # Penalties for performing a swap actions
+            if action_type == 'swap':
+                changed_flight = next((f for f in post_decision_state[new_aircraft_id]['flights'] if f["Flightnr"] == changed_flight), None)
+
+                t_0 = self.periods[0]
+                departure_time = changed_flight['ADT']
+
+                t = (departure_time - t).total_seconds() / 60                  # Time left until departure
+                T = (departure_time - t_0).total_seconds() / 60                    # time left until departure from start of recovery window
+                cost_factor = max(1, (2 - t / T)) if T != 0 else 2
+
+                reward -= self.swap_cost
+
+                # Check if delays were necessary following the swaps:
+                delay = self.check_delays(pre_decision_state, post_decision_state)
+                reward -= delay
+
+                # Impose large penalty on swapping to disruptions
+                new_aircraft_unavails = self.potential_disruptions[post_t-1][new_aircraft_id]
+                if any(self.disrupted(ua, changed_flight) for ua in new_aircraft_unavails if ua[2] == 1.0):
+                    reward -= 10000
+
+                reward *= cost_factor
+
+            if action_type == 'cancel':
+                old_aircraft_id = next((ac for ac, ac_state in pre_decision_state.items()
+                                        if ac != 't' and
+                                        ac != 'time_left' and
+                                        any(f['Flightnr'] == changed_flight for f in ac_state['flights'])), None)
+                old_aircraft_state = pre_decision_state[old_aircraft_id]
+                canceled_flight = next(f for f in old_aircraft_state['flights'] if f['Flightnr'] == changed_flight)
+
+                t_0 = self.periods[0]
+                departure_time = canceled_flight['ADT']
+
+                t = (departure_time - t).total_seconds() / 60                  # Time left until departure
+                T = (departure_time - t_0).total_seconds() / 60                    # time left until departure from start of recovery window
+
+                cost_factor = max(1, (2 - t / T)) if T != 0 else 2
+                reward -= self.cancellation_cost
+                reward *= cost_factor
 
         return reward
 
@@ -1343,6 +1401,8 @@ class TEST_ADP:
 
         weighted_objective_values = {}
         self.weighted_objective_value = 0
+        self.kpis = {}
+        self.robustness_metrics = {}
         for i in range(len(combinations)):
             start = time.time()
             next_state = self.states[self.initial_state_key]
@@ -1766,17 +1826,20 @@ class TEST_ADP:
         - metric for slack in recovered schedule, (float)
         '''
 
+
         intial_state = self.states[self.initial_state_key]
-        print(self.cancelled_flights)
-        cancelled_flightnrs = [f['flightnr'] for f in self.cancelled_flights[0]] if self.cancelled_flights else []
+        # print(f'{self.cancelled_flights[0]}') if self.cancelled_flights else None
+        cancelled_flightnrs = [f[0]['Flightnr'] for f in self.cancelled_flights] if self.cancelled_flights else []
         flights_T = [f for ac in self.aircraft_ids for f in last_state[ac]['flights']]
-        flights_0 = {f['Flightnr']: f for ac in m.aircraft_ids for f in intial_state[ac]['flights']}
+        flights_0 = {f['Flightnr']: f for ac in self.aircraft_ids for f in intial_state[ac]['flights']}
+
 
         n_swaps = self.n_swaps
         n_actions = self.n_actions
         nr_involved_aircraft = len(self.involved_aircraft)
         n_cancelled = len(self.cancelled_flights)
         time_to_recovered = len(accumulated_rewards) * 60
+
 
         delayed_flight_nrs = []
         violations = 0
@@ -1799,31 +1862,31 @@ class TEST_ADP:
                 total_delay += (f_T["ADT"] - flights_0[f_T['Flightnr']]["ADT"]).total_seconds() / 60
 
             if f_T["AAT"] > self.curfew:
-                violations = + 1
+                violations =+ 1
 
         affected_flights = set(self.swapped_flights).union(set(cancelled_flightnrs)).union(set(delayed_flight_nrs))
         nr_affected_flights = len(affected_flights)
 
-        kpis = {'objective_value': objective_value,
-                'n_delayed': n_delayed,
-                'total_delay': total_delay,
-                'n_cancelled': n_cancelled,
-                'n_swaps': n_swaps,
-                'n_actions': n_actions,
-                'affected_flights': nr_affected_flights,
-                'nr_involved_aircraft': nr_involved_aircraft,
-                'time_to_recovered': time_to_recovered,
-                'accumulated_rewards': accumulated_rewards,
-                'violations': violations,
-                'cpu': cpu_time
+        kpis = {'objective_value':         objective_value,
+                'n_delayed':                n_delayed,
+                 'total_delay' :            total_delay,
+                 'n_cancelled':             n_cancelled,
+                 'n_swaps':                 n_swaps,
+                 'n_actions':               n_actions,
+                 'affected_flights':        nr_affected_flights,
+                 'nr_involved_aircraft':    nr_involved_aircraft,
+                 'time_to_recovered':       time_to_recovered,
+                 'accumulated_rewards':     accumulated_rewards,
+                 'violations':              violations,
+                 'cpu':                     cpu_time
                 }
 
-        robustness_metrics = {'n_swaps': n_swaps,
-                              'n_actions': n_actions,
-                              'affected_flights': nr_affected_flights,
-                              'nr_involved_aircraft': nr_involved_aircraft,
-                              'slack': slack,
-                              }
+        robustness_metrics = {  'n_swaps':              n_swaps,
+                                'n_actions':            n_actions,
+                                'affected_flights':     nr_affected_flights,
+                                'nr_involved_aircraft': nr_involved_aircraft,
+                                'slack':                slack,
+        }
 
         return kpis, robustness_metrics
 
@@ -1941,64 +2004,71 @@ def test_instance(instance_id, pipeline):
     return m
 
 if __name__ == '__main__':
-    nr_test_instances = 200
-    x = 2
-    test_folders = [f'TEST{instance}' for instance in range(x, x+1)]
-    agg_lvl = 2
-    objective_values = {}
+    # training_instances_list = [50, 75, 100, 125, 150, 175, 200]
+    training_instances_list = [175]
+
+    write_results = True
+    check_errors = False
+    optimize_mae = True
+    SOLVE = True
     csv_file = '_state_features_multi_RS1_6x24.csv'  # '_state_features_multi_RS1_6x24.csv'
     config = '_'.join(csv_file.split('_')[3:]).replace('.csv', '')  # 'single_RS1_6x24'
     model = 'REACTIVE_VFA'
+    VALUES = {}
+    MAES, RMAES, R2S = {}, {}, {}
+    for training_instances in training_instances_list:
+        nr_test_instances = 250
+        x = 2
+        test_folders = [f'TEST{instance}' for instance in range(x, x + 1)]
+        agg_lvl = 2
+        objective_values = {}
 
-    write_results = True
-    check_errors = True
-    optimize_mae = False
+        TIME =  time.time()
+        df = pd.read_csv(csv_file)
+        # training_instances = 300
+        df = df[df['folder'].str[5:].astype(int) <= training_instances]
+        # df.rename(columns={
+        #     'int1': 'int_1',
+        #     'int4': 'in_2',
+        #     'int5': 'int_3',
+        #     'disruption_occured': 'n_disruptions_occured'
+        # }, inplace=True)
+        X = df.drop(columns=['t', 'prev_reward', 'value', 'count', 'prev_action', "folder"])
+        y = df['value']
+        data = df.drop(columns=['count', 't', 'prev_reward','prev_action', "folder"])
+        X, y, dropped_features = filter_correlation(X, y, data)
+        scaler = StandardScaler()
+        X = scaler.fit_transform(X)
+        pca = PCA(n_components=0.95)  # Choose enough components to explain 95% of variance
+        X_PCA = pca.fit_transform(X)
+        # X = pca.fit_transform(X)
+        # print(f"Number of components selected: {pca.n_components_}")
 
-    TIME =  time.time()
-    df = pd.read_csv('_state_features_multi_RS1_6x24.csv')
-    print(df.columns.tolist())
-    # df = df[df['t'] != 0]
-    # Separate features (X) and target (y)
-    X = df.drop(columns=['t', 'prev_reward', 'value', 'count', 'prev_action', "folder"])
-    y = df['value']
-    data = df.drop(columns=['count', 't', 'prev_reward','prev_action', "folder"])
+        # Step 3: Initialize and fit the model
+        # BFA = LinearRegression()  # Replace with your preferred model if necessary
+        # BFA = MLPRegressor(hidden_layer_sizes=(100, 50), max_iter=500)
+        # BFA = GradientBoostingRegressor(n_estimators=100, max_depth=3)
+        # BFA = RandomForestRegressor(n_estimators=375, max_depth=15)
+        # BFA = LogisticRegression()
+        BFA = RandomForestRegressor(max_depth=17, max_features= 0.3, min_samples_leaf= 1, min_samples_split=2, n_estimators=250)
 
-    X, y, dropped_features = filter_correlation(X, y, data)
-    print(f'Dropped features: {dropped_features}')
+        if optimize_mae:
+            # BFA_optimized = bayesian_optimization(X, y)
+            BFA = bayesian_optimization(X, y)
+            # e_range = np.arange(start=50, stop=1050, step=50)
+            # d_range = np.arange(start=5, stop=300, step=25)
+            # optimize_RFR(X, y, e_range, d_range)
 
-    # Standardize the features  (MLP, Lin, Ridge)
-    scaler = StandardScaler()
-    X = scaler.fit_transform(X)
-
-    # # Step 1: Apply PCA
-    pca = PCA(n_components=0.95)  # Choose enough components to explain 95% of variance
-    X_PCA = pca.fit_transform(X)
-    # X = pca.fit_transform(X)
-    # print(f"Number of components selected: {pca.n_components_}")
-
-    # Step 3: Initialize and fit the model
-    # BFA = LinearRegression()  # Replace with your preferred model if necessary
-    # BFA = MLPRegressor(hidden_layer_sizes=(100, 50), max_iter=500)
-    # BFA = GradientBoostingRegressor(n_estimators=100, max_depth=3)
-    # BFA = RandomForestRegressor(n_estimators=375, max_depth=15)
-    # BFA = LogisticRegression()
-    BFA = RandomForestRegressor(max_depth=17, max_features= 0.3, min_samples_leaf= 1, min_samples_split=2, n_estimators=250)
-
-    if optimize_mae:
-        bayesian_optimization(X, y)
-        # e_range = np.arange(start=50, stop=1050, step=50)
-        # d_range = np.arange(start=5, stop=300, step=25)
-        # optimize_RFR(X, y, e_range, d_range)
-
-    if check_errors:
-        test_model(X, y, BFA)
-        # test_model_with_kfold(X, y, BFA)
+        if check_errors:
+            # mse, mae = test_model(X, y, BFA)
+            avg_mse, avg_mae, avg_rmae, avg_r2 = test_model_with_kfold(X, y, BFA)
+            RMAES[training_instances] = avg_rmae
+            MAES[training_instances] = avg_mae
+            R2S[training_instances] = avg_r2
 
     BFA.fit(X, y)
-    pipeline = (scaler, pca, BFA, dropped_features)
+    pipeline = (scaler, pca, BFA, dropped_features, csv_file)
 
-    config      = 'multi_RS2_6x24'
-    model       = 'REACTIVE_VFA'
     results = {}
     with concurrent.futures.ProcessPoolExecutor() as executor:
         futures = [executor.submit(test_instance, instance_id, pipeline) for instance_id in range(1, nr_test_instances+1)]

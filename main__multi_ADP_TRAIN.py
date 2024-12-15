@@ -66,7 +66,7 @@ class VFA_ADP:
         self.swap_cost = 5
         self.delay_buffer = pd.Timedelta(minutes=5)
 
-        self.N = 10                          # Number of iterations per instance
+        self.N = 7500                        # Number of iterations per instance
         self.y = 1                           # Discount factor
         # self.α = 1 / self.N                # learning rate or stepsize, decaying
         self.α = 0.02                        # Learning rate or stepsize, fixed
@@ -81,18 +81,17 @@ class VFA_ADP:
         self.pruning = False
         self.plot_vals = True
         self.plot_episode = False
-        self.write_feats = False
+        self.write_feats = True
+
 
         # States
         self.initial_val = None
         self.initial_value_description = 'n potential conflicts at start'
-        self.csv_file = csv_file
-        self.model_name = '_'.join(csv_file.split('_')[3:]).replace('.csv', '')
+        self.csv_file = csv_file                                                                      # '_state_features_single_RS1_6x24.csv'
+        self.model_name = '_'.join(csv_file.split('_')[3:]).replace('.csv', '')           # 'single_RS1_6x24'
 
 
         self.states = dict()
-        self.agg_states = dict()
-        self.aggregation_level = agg_lvl
 
         # print(f'steps = {self.steps}')
         # print(f'periods = {self.periods}')
@@ -126,16 +125,8 @@ class VFA_ADP:
         state_dict['value'] = initial_value
         state_dict['iteration'] = 0
 
-        # agg_dict['count'] = 0
-        # agg_dict['value'] = initial_value
-        # agg_dict['iteration'] = [0]
-
         state_key = self.create_hashable_state_key(state_dict)
-        aggregate_state_key = self.G(state_dict, self.aggregation_level)
-
         self.states[state_key] = state_dict
-        # self.agg_states[aggregate_state_key] = agg_dict
-        # self.agg_states[aggregate_state_key]['count'] = 1
 
         return state_dict
 
@@ -214,87 +205,6 @@ class VFA_ADP:
                     return flight
         return 'None, Flight not found'
 
-    #OLD FUNCTION - first level of aggregation
-    def G(self, s, lvl):
-        """
-        Create a hashable aggregate key from a state dictionary that generalizes to unseen instances for testing purposes.
-
-        The first level key includes:
-        - n_remaining_flights per aircraft
-        - rounded flight times to hours.
-
-        The second level key includes:
-        - n_remaining_flights per aircraft
-        - n_remaining conflicts per aircraft
-
-        Args:
-            s (dict): A dictionary representing the state of the system.
-
-        Returns:
-            tuple: A hashable representation of the aggregate state.
-        """
-        aggregate_state_key = []
-
-        # First level of aggregation
-        if lvl == 1:
-            # 1. Add the number of remaining flights for each aircraft
-            for aircraft_id in self.aircraft_ids:
-                aircraft_state = s[aircraft_id]
-                # Create a list to store the aircraft attributes
-                aircraft_key = []
-                aircraft_key.append(aircraft_state['n_remaining_flights'])
-                unavailability_times = []
-
-                if aircraft_state['UA']:
-                    unavailability_start = (aircraft_state['UA'][0][0] -  self.recovery_start).total_seconds() / 60 / self.total_recovery_time # Convert to minutes
-                    unavailability_end = (aircraft_state['UA'][0][1] -  self.recovery_start).total_seconds() / 60 / self.total_recovery_time # Convert to minutes
-
-                    unavailability_times.append(unavailability_start)
-                    unavailability_times.append(unavailability_end)
-                aircraft_key.append(tuple(unavailability_times))
-
-                # 2. Round the flight times (departure and arrival) to the nearest hour
-                rounded_flight_times = []
-
-                # Sort the flights by departure time to ensure they are in chronological order
-                sorted_flights = sorted(aircraft_state['flights'], key=lambda flight: flight['ADT'])
-
-                for flight in sorted_flights:
-                    # Round departure and arrival times to nearest hour
-                    rounded_departure = flight['ADT'].replace(minute=0, second=0, microsecond=0) \
-                                        + timedelta(hours=1 if flight['ADT'].minute >= 30 else 0)
-                    rounded_arrival = flight['AAT'].replace(minute=0, second=0, microsecond=0) \
-                                      + timedelta(hours=1 if flight['AAT'].minute >= 30 else 0)
-
-                    # Relative arrtime and deptime to the recovery start time
-                    dep_time = (rounded_departure - self.recovery_start).total_seconds() / 60 / self.total_recovery_time  # Convert to minutes
-                    arr_time = (rounded_arrival - self.recovery_start).total_seconds() / 60 / self.total_recovery_time  # Convert to minutes
-
-                    # Append the rounded times to the list
-                    rounded_flight_times.append(dep_time)
-                    rounded_flight_times.append(arr_time)
-
-                # Add the number of remaining flights and the flight times (as a list, converted to tuple) for this aircraft
-                aircraft_key.append(tuple(rounded_flight_times))
-                aggregate_state_key.append(tuple(aircraft_key))
-
-        # Second level of aggregation
-        if lvl == 2:
-            # 1. Add the number of remaining flights for each aircraft
-            for aircraft_id in self.aircraft_ids:
-                aircraft_state = s[aircraft_id]
-                # Create a list to store the aircraft attributes
-                aircraft_key = []
-                n_conflicts = self.num_ac_conflicts(s, aircraft_id)
-
-                aircraft_key.append(aircraft_state['n_remaining_flights'])
-                aircraft_key.append(n_conflicts)
-
-                aggregate_state_key.append(tuple(aircraft_key))
-
-        # Convert the list to a tuple (to make it hashable)
-        return tuple(aggregate_state_key)
-
     # @profile
     def basis_features(self, state, x, reward):
         '''time elapsed, times state is visisited, n_remaining flights, n_remaining conflicts, utilization, _disruption_occured, p'''
@@ -340,8 +250,9 @@ class VFA_ADP:
 
 
         int5                         = min_int
-        int6                         = min_int1 * p_1 + min_int2 * p_2
-        int7                         = mint_int * E_n_conflicts
+        int2                         =  min_overlap * E_n_conflicts
+        int6                         =  min_int1 * p_1 + min_int2 * p_2
+        # int7                         = min_int * E_n_conflicts
         min_util                     = min(utilizations.values())
         # min_n_flights                = min(n_flights_dict.values())
         # min_int1                     = min(int1.values())
@@ -372,14 +283,19 @@ class VFA_ADP:
         features[f'min_overlap'] =                   min_overlap                         # min(overlap) combinations for disrupted ac's
         features[f'min_n_flights'] =                 min_n                               # min(remaining flights sinces disrupted flights) combination for disrupted ac's
         features[f'min_util'] =                      min_util                            # min(utils)
-        features[f'int5'] =                          int5                                # min(overlap * n_flight) combinations for disrupted ac's
-        features[f'int6'] =                          int6                                # min(overlap * n_flight * p) combinations for disrupted ac's
+        # features[f'int5'] =                          int5                                # min(overlap * n_flight) combinations for disrupted ac's
+        # features[f'int6'] =                          int6                                # min(overlap * n_flight * p) combinations for disrupted ac's
 
-        features[f'n_potential_conflics'] =          n_potential_conflicts               # misschien weg laten
+        #NEW
+        features[f'int1'] = int5                    # min(overlap * n_flight) combinations for disrupted ac's
+        features[f'int2'] = int2                    # m# min(overlap * E[n_conflicts]) combinations for disrupted ac's
+        features[f'int3'] = int6                    # min(overlap * n_flight * p) combinations for disrupted ac's
+        features[f'int4'] = int5 * E_n_conflicts    # min(overlap * n_flight) * E[n_conflicts] combinations for disrupted ac's
+
+        features[f'n_potential_conflicts'] =          n_potential_conflicts
         features[f'E[n_conflicts]'] =                E_n_conflicts
-        features[f'n_disruptions_occured'] =         n_disruptions_occured
         features[f'total_remaining_conflicts'] =     total_conflicts
-        features[f'disruption_occured'] =            disruption_occured     # If a disruption occured
+        features[f'n_disruptions_occured'] =         n_disruptions_occured
         features[f'recovered'] =                     1.0 if self.recovered(state) else 0.0
 
         features['value'] = state['value']
@@ -407,6 +323,7 @@ class VFA_ADP:
             n_potential_disrupted_flights += len([p for p in probs if p > 0.0])
 
         return expected_disruptions, n_potential_disrupted_flights
+
 
     # @profile
     def individual_probability(self, flight, ac, state):
@@ -984,16 +901,18 @@ class VFA_ADP:
         for ac in self.prone_aircraft:
             for a in self.aircraft_ids:
                 int1[ac][a] = prone_aircraft_overlaps[ac][a] * n_remaining_flights_per_overlap[ac][a]
+                int2[ac][a] = prone_aircraft_overlaps[ac][a] * n_remaining_flights_per_overlap[ac][a] * self.potential_disruptions[t-1][ac][0][2]
 
         interaction_tuples = {}
+        interaction2_tuples = {}
         overlap_tuples = {}
         n_flights_tuples = {}
         for ac in self.prone_aircraft:
             overlap_tuples[ac]     = sorted([(a, val) for a, val in prone_aircraft_overlaps[ac].items()], key=lambda x: x[1])
             n_flights_tuples[ac]   = sorted([(a, val) for a, val in n_remaining_flights_per_overlap[ac].items()], key=lambda x: x[1])
             interaction_tuples[ac] = sorted([(a, val) for a, val in int1[ac].items()], key=lambda x: x[1])
-
-        tuples = (overlap_tuples, n_flights_tuples, interaction_tuples)
+            interaction2_tuples[ac]= sorted([(a, val) for a, val in int2[ac].items()], key=lambda x: x[1])
+        tuples = (overlap_tuples, n_flights_tuples, interaction_tuples, interaction2_tuples)
         return prone_aircraft_overlaps, n_remaining_flights_per_overlap, int1, tuples
 
     def min_value(self, tuple_dict):
@@ -1016,6 +935,132 @@ class VFA_ADP:
         min_val1, min_val2 = min_vals[min_val][0], min_vals[min_val][1]
 
         return min_val, min_val1, min_val2
+
+
+    def optimize_aircraft_metrics(self, state, prone_aircraft, potential_disruptions, aircraft_ids):
+        # Initialize Gurobi model
+        model = Model("AircraftOverlapOptimization")
+
+        # Decision variables
+        x = model.addVars(prone_aircraft, aircraft_ids, vtype=GRB.BINARY, name="x")
+
+        # Parameters for overlaps, remaining flights, and interaction metric
+        prone_aircraft_overlaps = {}
+        n_remaining_flights_per_overlap = {}
+        interaction_metric = {}
+
+        # Compute overlaps and remaining flights
+        for ac in prone_aircraft:
+            prone_aircraft_overlaps[ac] = {}
+            n_remaining_flights_per_overlap[ac] = {}
+            interaction_metric[ac] = {}
+
+            disrupted_flights = [
+                f for f in state[ac]["flights"]
+                if any(disrupted(u, f) for u in potential_disruptions[state["t"] - 1][ac] if u[2] != 0)
+            ]
+            disrupted_flights = sorted(disrupted_flights, key=lambda f: f["ADT"])
+
+            for a in aircraft_ids:
+                if a == ac:
+                    ua_overlap = sum(
+                        max((ua[1] - f["ADT"]).total_seconds() / 60, 0.0)
+                        for f in disrupted_flights
+                        for ua in potential_disruptions[state["t"] - 1][a]
+                    )
+                    prone_aircraft_overlaps[ac][a] = ua_overlap
+                    n_remaining_flights_per_overlap[ac][a] = 1 + len(
+                        [
+                            fl
+                            for fl in state[ac]["flights"]
+                            if fl["ADT"] >= disrupted_flights[-1]["AAT"]
+                        ]
+                    )
+                else:
+                    overlap = 0.0
+                    if a in prone_aircraft and any(disrupted(ua, f) for ua in potential_disruptions[state["t"] - 1][a]):
+                        overlap += sum(
+                            max((ua[1] - f["ADT"]).total_seconds() / 60, 0.0)
+                            for ua in potential_disruptions[state["t"] - 1][a]
+                        )
+                    prone_aircraft_overlaps[ac][a] = overlap
+                    n_remaining_flights_per_overlap[ac][a] = len(
+                        [
+                            fl
+                            for fl in state[a]["flights"]
+                            if fl["ADT"] >= disrupted_flights[0]["ADT"]
+                        ]
+                    )
+
+                # Interaction metric
+                interaction_metric[ac][a] = (
+                        prone_aircraft_overlaps[ac][a] * n_remaining_flights_per_overlap[ac][a]
+                )
+
+        # Objective 1: Minimize overlaps (min(OS))
+        model.setObjective(
+            quicksum(
+                prone_aircraft_overlaps[ac][a] * x[ac, a]
+                for ac in prone_aircraft
+                for a in aircraft_ids
+            ),
+            GRB.MINIMIZE,
+        )
+
+        # Constraints
+        # Each prone aircraft is assigned to exactly one aircraft
+        model.addConstrs((quicksum(x[ac, a] for a in aircraft_ids) == 1 for ac in prone_aircraft), name="Assignment")
+
+        # Each candidate aircraft can only take one assignment
+        model.addConstrs((quicksum(x[ac, a] for ac in prone_aircraft) <= 1 for a in aircraft_ids), name="Uniqueness")
+
+        # Optimize first metric
+        model.optimize()
+
+        if model.status == GRB.OPTIMAL:
+            print("Optimal solution for min(OS) found.")
+            for ac in prone_aircraft:
+                for a in aircraft_ids:
+                    if x[ac, a].X > 0.5:
+                        print(f"Prone aircraft {ac} assigned to candidate aircraft {a} with overlap {prone_aircraft_overlaps[ac][a]}")
+
+        # Objective 2: Minimize remaining flights (min(NS))
+        model.setObjective(
+            quicksum(
+                n_remaining_flights_per_overlap[ac][a] * x[ac, a]
+                for ac in prone_aircraft
+                for a in aircraft_ids
+            ),
+            GRB.MINIMIZE,
+        )
+        model.optimize()
+
+        if model.status == GRB.OPTIMAL:
+            print("Optimal solution for min(NS) found.")
+            for ac in prone_aircraft:
+                for a in aircraft_ids:
+                    if x[ac, a].X > 0.5:
+                        print(f"Prone aircraft {ac} assigned to candidate aircraft {a} with remaining flights {n_remaining_flights_per_overlap[ac][a]}")
+
+        # Objective 3: Minimize interaction metric (int_1)
+        model.setObjective(
+            quicksum(
+                interaction_metric[ac][a] * x[ac, a]
+                for ac in prone_aircraft
+                for a in aircraft_ids
+            ),
+            GRB.MINIMIZE,
+        )
+        model.optimize()
+
+        if model.status == GRB.OPTIMAL:
+            print("Optimal solution for int_1 found.")
+            for ac in prone_aircraft:
+                for a in aircraft_ids:
+                    if x[ac, a].X > 0.5:
+                        print(f"Prone aircraft {ac} assigned to candidate aircraft {a} with interaction metric {interaction_metric[ac][a]}")
+
+        return model
 
     def overlap_dicts(self, state):
         """
@@ -1873,7 +1918,7 @@ class VFA_ADP:
                     # print(f'{-self.initial_value(S_tx_dict)}')
                     # print()
 
-                    # if self.BFA and n == self.N and self.write_feats: self.write_features(S_tx_dict, x_hat, file, best_immediate_reward)
+                    if self.BFA and n == self.N and self.write_feats: self.write_features(S_tx_dict, x_hat, file, best_immediate_reward)
 
                     if self.recovered(S_tx_dict) or S_tx_dict['t'] == self.T:
                         if n > self.N - 3 and self.plot_episode: self.plot_schedule(S_tx_dict, n, self.folder, sum(accumulated_rewards), probs, string=f'{S_tx_dict['value']}')
@@ -2122,7 +2167,7 @@ def train_instance(instance_id, csv_file):
     agg_lvl = 2
     print(f"\nTraining for instance {instance_id} in folder {folder}")
     aircraft_data, flight_data, rotations_data, disruptions, recovery_start, recovery_end = read_data(folder)
-    m = VFA_ADP(aircraft_data, flight_data, disruptions, recovery_start, recovery_end, agg_lvl, folder)
+    m = VFA_ADP(aircraft_data, flight_data, disruptions, recovery_start, recovery_end, agg_lvl, folder, csv_file)
     TIME = time.time()
     m.train_with_vfa()
     print(f'train_with_vfa time: {time.time() - TIME}')
@@ -2148,14 +2193,14 @@ def instance_information(instance_id, csv_file):
 
 if __name__ == '__main__':
     write_results = True
-    nr_instances = 260
+    nr_instances = 200
     x = 3
     agg_lvl = 2
-    csv_file = '_state_features_multi_RS2_6x24.csv'  # Define the CSV file path
+    csv_file = '__state_features_multi_RS1_6x24.csv'  # Define the CSV file path
     max_flights = 6
 
     aircraft_data, flight_data, rotations_data, disruptions, recovery_start, recovery_end = read_data('TRAIN1')
-    # initialize_csv_multi(csv_file, [aircraft['ID'] for aircraft in aircraft_data], max_flights)
+    initialize_csv_multi(csv_file, [aircraft['ID'] for aircraft in aircraft_data], max_flights)
     m = VFA_ADP(aircraft_data, flight_data, disruptions, recovery_start, recovery_end, agg_lvl, 'TRAIN1', csv_file)
 
     model_name = m.model_name
@@ -2168,7 +2213,7 @@ if __name__ == '__main__':
     start_time = time.time()
     print(f'Training started at {now}')
     with concurrent.futures.ProcessPoolExecutor() as executor:
-        futures = [executor.submit(train_instance, instance_id) for instance_id in range(1, nr_instances+1)]
+        futures = [executor.submit(train_instance, instance_id, csv_file) for instance_id in range(1, nr_instances+1)]
 
         for index, future in enumerate(concurrent.futures.as_completed(futures)):
             N_iterations, value_evolution, obj_evolution, instance_id, obj, tim, m  = future.result()
@@ -2186,13 +2231,11 @@ if __name__ == '__main__':
 
     save_training_results(model_name, results)
 
-    TT = end_time - TIME
-    print(f'returning values from train_instance() time: {TT} s')
     print("Training done, states and policies saved.")
     print(f"TRAINED {nr_instances} INSTANCES IN {round((T), 2)} SECONDS")
     print(f'Solved with {round((N_iterations * nr_instances) /T , 2)} iterations per second')
 
-    F, A, N, gamma, epsilon, stepsize, harmonic, decaying, pruning = instance_information(1)
+    F, A, N, gamma, epsilon, stepsize, harmonic, decaying, pruning = instance_information(1, csv_file)
     data = (flight_data, aircraft_data, T)
     vals = (objective_values, objective_evolutions, value_evolutions)
     if m.plot_vals:
@@ -2246,10 +2289,3 @@ if __name__ == '__main__':
         print("Results_Test and parameters saved to Excel.")
 
 
-  # Snapshot of memory usage
-  #   snapshot = tracemalloc.take_snapshot()
-  #   top_stats = snapshot.statistics('lineno')
-
-    # print("[ Top 10 Memory Consuming Lines ]")
-    # for stat in top_stats[:10]:
-    #     print(stat)

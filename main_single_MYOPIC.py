@@ -58,7 +58,10 @@ class TEST_ADP:
         self.plot_episode = False
         self.estimation_method = 'BFA'     # 'BFA' or 'aggregation"
 
-        self.scaler, self.pca, self.BFA, self.dropped_features = pipeline
+        self.scaler, self.pca, self.BFA, self.dropped_features, self.csv_file = pipeline
+        self.model_name = '_'.join(self.csv_file.split('_')[3:]).replace('.csv', '')
+
+        self.scaler, self.pca, self.BFA, self.dropped_features, self.csv_file = pipeline
         self.aggregation_level = agg_lvl
         self.initial_state = self.initialize_state()
         self.initial_state_key = self.create_hashable_state_key(self.initial_state)
@@ -1116,6 +1119,8 @@ class TEST_ADP:
         return S_t_next_dict, S_t_next
 
     ################### SOLVE: ###################
+    ################### SOLVE: ###################
+
     def solve_with_gurobi(self, S_t_dict, X_ta, t, n):
         # Initialize the Gurobi model
         model = gp.Model("ADP_Optimization")
@@ -1267,6 +1272,9 @@ class TEST_ADP:
         # print(self.weighted_kpis)
         # print()
         # print(self.weighted_rb)
+    ################### SOLVE: ###################
+    ################### SOLVE: ###################
+
 
     def track_kpis(self, x_hat):
         if x_hat[0] == 'swap':
@@ -1302,7 +1310,8 @@ class TEST_ADP:
 
 
         intial_state = self.states[self.initial_state_key]
-        cancelled_flightnrs = [f['flightnr'] for f in self.cancelled_flights[0]] if self.cancelled_flights else []
+        print(f'{self.cancelled_flights[0]}') if self.cancelled_flights else None
+        cancelled_flightnrs = [f[0]['Flightnr'] for f in self.cancelled_flights] if self.cancelled_flights else []
         flights_T = [f for ac in self.aircraft_ids for f in last_state[ac]['flights']]
         flights_0 = {f['Flightnr']: f for ac in self.aircraft_ids for f in intial_state[ac]['flights']}
 
@@ -1360,7 +1369,6 @@ class TEST_ADP:
                                 'nr_involved_aircraft': nr_involved_aircraft,
                                 'slack':                slack,
         }
-
 
         return kpis, robustness_metrics
 
@@ -1745,22 +1753,24 @@ def test_instance(instance_id, pipeline):
     m.solve_with_vfa()
     # m.solve_with_vfa()
 
-
     return m
 
 if __name__ == '__main__':
-    training_instances_list = [50,100,150,200,300,400,500,600,640]
+    training_instances_list = [50,100,150,200,300,360]
+    training_instances_list = [175]
+    VALUES = {}
     for training_instances in training_instances_list:
-        nr_test_instances = 100
+        nr_test_instances = 250
         x = 4
         test_folders = [f'TEST{instance}' for instance in range(x, x+1)]
         folders = [f'TEST{instance}' for instance in range(1, nr_test_instances+1)]
         csv_file = '_state_features_single_RS1_6x24.csv'                                # '_state_features_single_RS1_6x24.csv'
         config = '_'.join(csv_file.split('_')[3:]).replace('.csv', '')      # 'single_RS1_6x24'
         model      = 'MYOPIC'
-        write_results = False
-        check_errors = True
+        write_results = True
+        check_errors = False
         optimize_mae = False
+        SOLVE = True
 
         agg_lvl = 2
         objective_values = {}
@@ -1770,25 +1780,14 @@ if __name__ == '__main__':
         TIME =  time.time()
         df = pd.read_csv(csv_file)
         df = df[df['t'] != 0]
-
-        # training_instances = 600
         df = df[df['folder'].str[5:].astype(int) <= training_instances]
-        print(len(df))
-
-
-        # Separate features (X) and target (y)
         X = df.drop(columns=['value', 'count', 'prev_action', "folder"])
         y = df['value']
         data = df.drop(columns=['count', 'prev_action', "folder"])
-
         X, y, dropped_features = filter_correlation(X, y, data)
-        print(f'Dropped features: {dropped_features}')
-
-        # Standardize the features  (MLP, Lin, Ridge)
         scaler = StandardScaler()
         X = scaler.fit_transform(X)
 
-        # # Step 1: Apply PCA
         pca = PCA(n_components=0.95)  # Choose enough components to explain 95% of variance
         X_PCA = pca.fit_transform(X)
         print(f"Number of components selected: {pca.n_components_}")
@@ -1807,82 +1806,90 @@ if __name__ == '__main__':
             test_model(X, y, BFA)
             test_model_with_kfold(X, y, BFA)
         BFA.fit(X, y)
-        pipeline = (scaler, pca, BFA, dropped_features)
+        pipeline = (scaler, pca, BFA, dropped_features, csv_file)
 
-        results = {}
-        with concurrent.futures.ProcessPoolExecutor() as executor:
-            futures = [executor.submit(test_instance, instance_id, pipeline) for instance_id in range(1, nr_test_instances+1)]
-            # futures = [executor.submit(test_instance, instance_id, pipeline) for instance_id in range(x, x+1)]
 
-            for index, future in enumerate(concurrent.futures.as_completed(futures)):
-                m  = future.result()
-                results[m.folder] = {}
-                objective_values[m.folder] = m.weighted_objective_value
-                results[m.folder]['KPIS'] = m.weighted_kpis
-                results[m.folder]['robustness'] = m.weighted_rb
+        if SOLVE:
+            results = {}
+            with concurrent.futures.ProcessPoolExecutor() as executor:
+                futures = [executor.submit(test_instance, instance_id, pipeline) for instance_id in range(1, nr_test_instances+1)]
+                # futures = [executor.submit(test_instance, instance_id, pipeline) for instance_id in range(x, x+1)]
 
-        #
-        # for folder in folders:
-        # # for folder in folders:
-        # # for folder in ["TEST4", "TEST5", "TEST6"]:
-        #     results[folder] = {}
-        #     print(f"\nTesting trained ADP model for instance {folder}")
-        #     aircraft_data, flight_data, rotations_data, disruptions, recovery_start, recovery_end = read_data(folder)
-        #
-        #     m = TEST_ADP(aircraft_data, flight_data, disruptions, recovery_start, recovery_end, agg_lvl, folder, pipeline)
-        #
-        #     initial_state = m.initialize_state()
-        #     m.solve_with_vfa()
-        #
-        #     objective_values[folder] = m.objective_value
-        #     results[folder]['KPIS'] = m.weighted_kpis
-        #     results[folder]['robustness'] = m.weighted_rb
+                for index, future in enumerate(concurrent.futures.as_completed(futures)):
+                    m  = future.result()
+                    results[m.folder] = {}
+                    objective_values[m.folder] = m.weighted_objective_value
+                    results[m.folder]['KPIS'] = m.weighted_kpis
+                    results[m.folder]['robustness'] = m.weighted_rb
 
-        save_model_results(config, model,  results)
-        for folder, value in objective_values.items():
-            print(folder, '>>', value)
+            #
+            # for folder in folders:
+            # # for folder in folders:
+            # # for folder in ["TEST4", "TEST5", "TEST6"]:
+            #     results[folder] = {}
+            #     print(f"\nTesting trained ADP model for instance {folder}")
+            #     aircraft_data, flight_data, rotations_data, disruptions, recovery_start, recovery_end = read_data(folder)
+            #
+            #     m = TEST_ADP(aircraft_data, flight_data, disruptions, recovery_start, recovery_end, agg_lvl, folder, pipeline)
+            #
+            #     initial_state = m.initialize_state()
+            #     m.solve_with_vfa()
+            #
+            #     objective_values[folder] = m.objective_value
+            #     results[folder]['KPIS'] = m.weighted_kpis
+            #     results[folder]['robustness'] = m.weighted_rb
 
-        avg_objective_value = sum(objective_values.values()) / len(objective_values)
+            save_model_results(config, model,  results)
+            for folder, value in objective_values.items():
+                print(folder, '>>', value)
 
-        print(f'-------------------------------------------------------------------')
-        print(f'{training_instances} TRAINING INSTANCES')
-        print(f'\nResults_Test for trained ADP model with {m.estimation_method}')
-        print(f'\tAverage objective value when testing: {avg_objective_value}')
-        print(f'-------------------------------------------------------------------')
+            avg_objective_value = round(sum(objective_values.values()) / len(objective_values), 4)
+            VALUES[training_instances] = avg_objective_value
 
-        M_obj = avg_objective_value
-        min_z = min(objective_values.values())
-        max_z = max(objective_values.values())
+            print(f'-------------------------------------------------------------------')
+            print(f'{training_instances} TRAINING INSTANCES')
+            print(f'\nResults_Test for trained ADP model with {m.estimation_method}')
+            print(f'\tAverage objective value when testing: {avg_objective_value}')
+            print(f'-------------------------------------------------------------------')
 
-        if write_results:
-            params = {
-                'training_run': '',
-                'obj': M_obj,
-                'min_z': min_z,
-                'max_z': max_z,
-                'Policy': 'MYOPIC',
-                'Method': 'Myopic',
-                "instances": nr_test_instances,
-                'model': 'Myopic'
-            }
-            df = pd.DataFrame([params])
-            file_path = 'Results.xlsx'
-            sheet_name = 'Testing'
+            M_obj = avg_objective_value
+            min_z = min(objective_values.values())
+            max_z = max(objective_values.values())
 
-            # Check if the file exists
-            if os.path.exists(file_path):
-                # If the file exists, append without overwriting
-                with pd.ExcelWriter(file_path, mode='a', engine='openpyxl', if_sheet_exists='overlay') as writer:
-                    # Load the workbook to find the correct row
-                    workbook = writer.book
-                    if sheet_name in workbook.sheetnames:
-                        # Get the last row in the existing sheet
-                        start_row = workbook[sheet_name].max_row
-                    else:
-                        # If the sheet does not exist, start from row 0
-                        start_row = 0
-                    df.to_excel(writer, sheet_name=sheet_name, index=False, header=(start_row == 0), startrow=start_row)
-            else:
-                # If the file doesn't exist, create it and write the dataframe
-                df.to_excel(file_path, sheet_name=sheet_name, index=False)
-            print("Results_Test and parameters saved to Excel.")
+            if write_results:
+                params = {
+                    'training_run': '',
+                    'obj': M_obj,
+                    'min_z': min_z,
+                    'max_z': max_z,
+                    'Policy': 'MYOPIC',
+                    'Method': 'Myopic',
+                    "instances": nr_test_instances,
+                    'model': 'Myopic'
+                }
+                df = pd.DataFrame([params])
+                file_path = 'Results.xlsx'
+                sheet_name = 'Testing'
+
+                # Check if the file exists
+                if os.path.exists(file_path):
+                    # If the file exists, append without overwriting
+                    with pd.ExcelWriter(file_path, mode='a', engine='openpyxl', if_sheet_exists='overlay') as writer:
+                        # Load the workbook to find the correct row
+                        workbook = writer.book
+                        if sheet_name in workbook.sheetnames:
+                            # Get the last row in the existing sheet
+                            start_row = workbook[sheet_name].max_row
+                        else:
+                            # If the sheet does not exist, start from row 0
+                            start_row = 0
+                        df.to_excel(writer, sheet_name=sheet_name, index=False, header=(start_row == 0), startrow=start_row)
+                else:
+                    # If the file doesn't exist, create it and write the dataframe
+                    df.to_excel(file_path, sheet_name=sheet_name, index=False)
+                print("Results_Test and parameters saved to Excel.")
+
+    print(f'-------------------------------------------------------------------')
+    print(f'RESULTS FOR DIFFERENT TRAIN SIZES:')
+    print(f'{VALUES}')
+    print(f'-------------------------------------------------------------------')

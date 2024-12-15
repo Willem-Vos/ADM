@@ -74,9 +74,7 @@ class VFA_ADP:
         self.swap_cost = 5
 
         self.N = 3000                        # Number of iterations per instance
-        # self.N = 10                        # Number of iterations per instance
         self.y = 1                           # Discount factor
-        # self.α = 1 / self.N                # learning rate or stepsize, decaying
         self.α = 0.02                        # Learning rate or stepsize, fixed
         self.harmonic_a = 200                # Parameter for calculating harmonic stepsize
         self.ε = 0.0                         # Exploration probability
@@ -164,8 +162,9 @@ class VFA_ADP:
         int1 = {}
         disruption = self.potential_disruptions[0][self.prone_aircraft[0]][0]      # Assume for disruption for one aircraft
         ua_start, ua_end = disruption[0], disruption[1]
+        p = disruption[2]
         aircraft_overlaps = self.calculate_aircraft_overlaps(state)
-        n_expected_conflicts = self.expected_num_conflicts(state)
+        # n_expected_conflicts = self.expected_num_conflicts(state)
         # print(f'n_expected_conflicts: {n_expected_conflicts}')
 
         for aircraft in self.aircraft_ids:
@@ -176,8 +175,10 @@ class VFA_ADP:
         # print(f'min overlap: {min(int1.values())}')
         # print(f'min int1: {min(int1.values()) * n_expected_conflicts}')
 
-        self.initial_value_description = "int1 * E_n_conflicts"
-        return min(int1.values()) * n_expected_conflicts
+        # self.initial_value_description = "int1 * E_n_conflicts"
+        # return min(int1.values()) * n_expected_conflicts
+        self.initial_value_description = "int1 * p"
+        return min(int1.values()) * p
         # return n_expected_conflicts * self.cancellation_cost
         # return 0
 
@@ -214,46 +215,17 @@ class VFA_ADP:
             n_flights_dict[aircraft_id] =       len([f for f in aircraft_state['flights'] if f['AAT'] > ua_start])
             utilizations[aircraft_id] =         self.calculate_utilization(state, aircraft_id)
             int1[aircraft_id] =                 aircraft_overlaps[aircraft_id] *  n_flights_dict[aircraft_id]
-            int2[aircraft_id] =                 utilizations[aircraft_id] *  n_flights_dict[aircraft_id]
-            int3[aircraft_id] =                 aircraft_overlaps[aircraft_id] * utilizations[aircraft_id] *  n_flights_dict[aircraft_id]
+            # int2[aircraft_id] =                 utilizations[aircraft_id] *  n_flights_dict[aircraft_id]
+            # int3[aircraft_id] =                 aircraft_overlaps[aircraft_id] * utilizations[aircraft_id] *  n_flights_dict[aircraft_id]
             total_conflicts   +=                n_conflicts
-
-            # if aircraft_id in self.prone_aircraft:
-            #     flights = sorted(state[aircraft_id]['flights'], key=lambda f: f['ADT'])
-            #
-            #     # intialize probabilities at 0:
-            #     for index in range(self.max_flights_per_aircraft_prone_ac):
-            #         features[f'{aircraft_id}_F{index + 1}_prob'] = 0.0
-            #
-            #         # Now calculate probabilities for existing flights
-            #         if index < len(flights):
-            #             f = flights[index]
-            #             features[f'{aircraft_id}_F{index + 1}_prob'] = self.individual_probability(f, aircraft_id, state)
-            #             # a = features[f'{aircraft_id}_F{index + 1}_prob']
-            #             # print(f' Prob {aircraft_id}, F{index+1} ={a}')
-            #             # features[f'{aircraft_id}_F{index + 1}_prob'] = 1
-            #
-            #         # print(f'{aircraft_id}_F{index+1}_prob = {features[f'{aircraft_id}_F{index+1}_prob']}')
-
-                # # Probabilities of different number of conflicts:
-                # for n, prob in self.n_conflicts_probability_for_ac(flights, aircraft_id, state).items():
-                #     if n > 5:
-                #         continue
-                #     features[f'{aircraft_id}_{n}C_prob'] = prob
-                #     # print(f'{aircraft_id}_{n}C_prob = {prob}')
-
-                # # Probabilities of different number of conflicts:
-                # for n in range(1, 6):
-                #     features[f'{aircraft_id}_{n}C_prob'] = 1
-                #     # print(f'{aircraft_id}_{n}C_prob = {prob}')
 
         min_aircraft_id, min_overlap = min(aircraft_overlaps.items(), key=lambda x: x[1])
 
         min_util =              min(utilizations.values())
         min_n_flights =         min(n_flights_dict.values())
         min_int1 =              min(int1.values())
-        min_int2 =              min(int2.values())
-        min_int3 =              min(int3.values())
+        # min_int2 =              min(int2.values())
+        # min_int3 =              min(int3.values())
 
         # print(f'{utilizations = }')
         # print(f'{n_flights_dict = }')
@@ -266,15 +238,15 @@ class VFA_ADP:
         features[f'min_prone_overlap'] =             min_overlap
         features[f'min_n_flights'] =                 min_n_flights
         features[f'min_util'] =                      min_util
-        features[f'int1'] =                          min_int1                       # min(overlap        * n_flights)
-        features[f'int2'] =                          min_int2                       # min(util           *  n_flights)
-        features[f'int3'] =                          min_int3                       # min(overlap        * util         * n_flights)
-        features[f'int4'] =                          E_n_conflicts * min_overlap    # min(E[n_conflicts] * overlap)
+        features[f'int1'] =                          min_int1                        # min(overlap        * n_flights)
+        features[f'int2'] =                          E_n_conflicts * min_overlap    # min(E[n_conflicts] * overlap)
+        features[f'int3'] =                          min_int1 * p                   # min(overlap * n_flight * p) combinations for disrupted ac's
+        features[f'int4'] =                          min_int1 * E_n_conflicts       # min(overlap * n_flight * E_n_conflicts) ombinations for disrupted ac's
 
-        features[f'n_potential_conflics'] =          n_potential_conflicts          # misschien weg laten
+        features[f'n_potential_conflicts'] =         n_potential_conflicts          # misschien weg laten
         features[f'E[n_conflicts]'] =                E_n_conflicts
         features[f'total_remaining_conflicts'] =     total_conflicts
-        features[f'disruption_occured'] =            disruption_occured             # If a disruption occured
+        features[f'n_disruptions_occured'] =            disruption_occured             # If a disruption occured
         features[f'recovered'] =                     1.0 if disruption_occured == 1 and total_conflicts == 0 else 0.0
 
         features['value'] = state['value']
@@ -891,7 +863,7 @@ class VFA_ADP:
 
         # REWARD STRUCTURE 2
         if 'RS2' in self.model_name:
-
+            max_factor = 1.5
             for aircraft_id in self.aircraft_ids:
                 # 1. Check how many flights did not get recoverd or violated curfews
                 implicit_canx += self.check_canx(pre_decision_state, post_decision_state, aircraft_id, apply)
@@ -914,7 +886,7 @@ class VFA_ADP:
 
                 t = (departure_time - t).total_seconds() / 60                  # Time left until departure
                 T = (departure_time - t_0).total_seconds() / 60                    # time left until departure from start of recovery window
-                cost_factor = max(1, (2 - t / T)) if T != 0 else 2
+                cost_factor = max(1, (max_factor - t / T)) if T != 0 else max_factor
 
                 reward -= self.swap_cost
 
@@ -943,7 +915,64 @@ class VFA_ADP:
                 t = (departure_time - t).total_seconds() / 60                  # Time left until departure
                 T = (departure_time - t_0).total_seconds() / 60                    # time left until departure from start of recovery window
 
-                cost_factor = max(1, (2 - t / T)) if T != 0 else 2
+                cost_factor = max(1, (max_factor - t / T)) if T != 0 else max_factor
+                reward -= self.cancellation_cost
+                reward *= cost_factor
+
+        # REWARD STRUCTURE 2
+        if 'RS3' in self.model_name:
+            max_factor = 2
+            for aircraft_id in self.aircraft_ids:
+                # 1. Check how many flights did not get recoverd or violated curfews
+                implicit_canx += self.check_canx(pre_decision_state, post_decision_state, aircraft_id, apply)
+                violations += self.check_curfew_violations(pre_decision_state, post_decision_state, aircraft_id)
+
+            if apply: return reward
+
+            # Make sure that instead of do nothing, the model actively cancels the flight by choosing 'cancel' action
+            # This way the model cancels the same flight by frees up space by doing so.
+            # if the model does not actively cancels a flight but does nothing, give large negative reward
+            reward -= implicit_canx * self.cancellation_cost * 2            #Implicit cancelations always have a cost factor of 2.
+            reward -= violations * self.violation_costs
+
+            # Penalties for performing a swap actions
+            if action_type == 'swap':
+                changed_flight = next((f for f in post_decision_state[new_aircraft_id]['flights'] if f["Flightnr"] == changed_flight), None)
+                t_0 = self.periods[0]
+                departure_time = changed_flight['ADT']
+
+                t = (departure_time - t).total_seconds() / 60                  # Time left until departure
+                T = (departure_time - t_0).total_seconds() / 60                    # time left until departure from start of recovery window
+                cost_factor = max(1, (max_factor - t / T)) if T != 0 else max_factor
+
+                reward -= self.swap_cost
+
+                # Check if delays were necessary following the swaps:
+                delay = self.check_delays(pre_decision_state, post_decision_state)
+                reward -= delay
+
+                # Impose large penalty on swapping to disruptions
+                new_aircraft_unavails = self.potential_disruptions[post_t-1][new_aircraft_id]
+                if any(self.disrupted(ua, changed_flight) for ua in new_aircraft_unavails if ua[2] == 1.0):
+                    reward -= 10000
+
+                reward *= cost_factor
+
+            if action_type == 'cancel':
+                old_aircraft_id = next((ac for ac, ac_state in pre_decision_state.items()
+                                        if ac != 't' and
+                                        ac != 'time_left' and
+                                        any(f['Flightnr'] == changed_flight for f in ac_state['flights'])), None)
+                old_aircraft_state = pre_decision_state[old_aircraft_id]
+                canceled_flight = next(f for f in old_aircraft_state['flights'] if f['Flightnr'] == changed_flight)
+
+                t_0 = self.periods[0]
+                departure_time = canceled_flight['ADT']
+
+                t = (departure_time - t).total_seconds() / 60                  # Time left until departure
+                T = (departure_time - t_0).total_seconds() / 60                    # time left until departure from start of recovery window
+
+                cost_factor = max(1, (max_factor - t / T)) if T != 0 else max_factor
                 reward -= self.cancellation_cost
                 reward *= cost_factor
 
@@ -1599,9 +1628,9 @@ def instance_information(instance_id, csv_file):
 
 if __name__ == '__main__':
     write_results = True
-    nr_instances = 360
+    nr_instances = 250
     x = 5
-    csv_file = '_state_features_single_RS1_6x24.csv'  # Define the CSV file path
+    csv_file = '_state_features_single_RS2_6x24(2).csv'  # Define the CSV file path
     max_flights = 6
 
     aircraft_data, flight_data, rotations_data, disruptions, recovery_start, recovery_end = read_data('TRAIN1')
@@ -1629,7 +1658,6 @@ if __name__ == '__main__':
             value_evolutions[instance_id] = value_evolution
             objective_values[instance_id] = obj
             objective_evolutions[instance_id] = obj_evolution
-
 
     end_time = time.time()
     T = end_time - start_time
